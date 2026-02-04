@@ -1,4 +1,4 @@
-using SlideMaters_BlazorApp.Components;
+using SlideMasters_BlazorApp.Components;
 
 var builder = WebApplication.CreateBuilder(args);
 
