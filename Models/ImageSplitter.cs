@@ -1,26 +1,25 @@
 ﻿using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Processing;
-using System.Drawing;
 
 namespace SlideMasters_BlazorApp.Models
 {
     public class ImageSplitter
     {
-        public SixLabors.ImageSharp.Image[] SplitImage(string path, int splitCount)
+        public Image[] SplitImage(string path, int splitCount)
         {
-            SixLabors.ImageSharp.Image[] splitImages = new SixLabors.ImageSharp.Image[splitCount];
+            Image[] splitImages = new Image[splitCount / 2];
 
-            using (var image = SixLabors.ImageSharp.Image.Load(path))
+            using (var image = Image.Load(path))
             {
                 if (splitCount > 0)
-                {
-                    int partWidth = image.Width / splitCount;
-                    int partHeight = image.Height / splitCount;
+                { 
+                    int partWidth = image.Width / (splitCount / 2);
+                    int partHeight = image.Height / (splitCount / 2);
 
-                    for (int i = 0; i < splitCount; i++)
+                    for (int i = 0; i < (splitCount / 2); i++)
                     {
                         var clone = image.Clone(ctx =>
-                            ctx.Crop(new SixLabors.ImageSharp.Rectangle(i * partWidth, 0, partWidth, image.Height)));
+                            ctx.Crop(new Rectangle(i * partWidth, i * partHeight, partWidth, partHeight)));
 
                         splitImages[i] = clone;
                     }
