@@ -6,11 +6,11 @@ namespace SlideMasters_BlazorApp.Models
 {
     public class ImageSplitter
     {
-        public SixLabors.ImageSharp.Image[] SplitImage(string path, int splitCount)
+        public Image[] SplitImage(string path, int splitCount)
         {
-            SixLabors.ImageSharp.Image[] splitImages = new SixLabors.ImageSharp.Image[splitCount];
+            Image[] splitImages = new Image[splitCount];
 
-            using (var image = SixLabors.ImageSharp.Image.Load(path))
+            using (var image = Image.Load(path))
             {
                 if (splitCount > 0)
                 {
