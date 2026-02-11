@@ -1,4 +1,5 @@
-﻿@page "/"
+﻿@rendermode InteractiveServer
+@page "/"
 @using SixLabors.ImageSharp
 
 <PageTitle>Home</PageTitle>
@@ -6,7 +7,7 @@
 <h1>Image Viewer</h1>
 
 <div class="mb-3">
-    <button class="btn btn-primary" @onclick='() => LoadImageData("toji")'>Load Toji Image</button>
+    <button class="btn btn-primary" @onclick='() => LoadImageData("redToji")'>Load Toji Image</button>
 </div>
 
 @if (ImageSource != null)
@@ -31,12 +32,12 @@
 
     private void LoadImageData(string imageName)
     {
-        ImageSource = $"Images/{imageName}.jpg";
+        ImageSource = $"/Images/{imageName}.jpg";
         
         try
         {
             // Path to the image file on the server
-            var filePath = Path.Combine(Directory.GetCurrentDirectory(), "Images", $"{imageName}.jpg");
+            var filePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "Images", $"{imageName}.jpg");
             
             if (File.Exists(filePath))
             {
