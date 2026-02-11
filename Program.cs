@@ -22,12 +22,6 @@ app.UseStaticFiles();
 app.UseAntiforgery();
 
 
-app.UseStaticFiles(new StaticFileOptions
-{
-    FileProvider = new Microsoft.Extensions.FileProviders.PhysicalFileProvider(
-        Path.Combine(builder.Environment.ContentRootPath, "Images")),
-    RequestPath = "/Images"
-});
 
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();

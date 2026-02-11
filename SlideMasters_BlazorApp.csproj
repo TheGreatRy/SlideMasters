@@ -7,11 +7,12 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Folder Include="Images\" />
+    <PackageReference Include="SixLabors.ImageSharp" Version="3.1.12" />
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="SixLabors.ImageSharp" Version="3.1.12" />
+    <None Include="wwwroot\Images\redToji.jpg" />
+    <None Include="wwwroot\Images\toji.jpg" />
   </ItemGroup>
 
 </Project>
