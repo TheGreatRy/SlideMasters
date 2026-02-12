@@ -1,6 +1,7 @@
 ﻿@rendermode InteractiveServer
 @page "/"
 @using SixLabors.ImageSharp
+@using SlideMasters_BlazorApp.Models
 
 <PageTitle>Home</PageTitle>
 
@@ -26,6 +27,10 @@
 
 @code
 {
+    //main puzzle pieces
+    public List<ImageBlock> slidingPuzzleBlocks = new List<ImageBlock>();
+
+    //Validate input image
     private string? ImageSource { get; set; }
     private int ImageWidth { get; set; }
     private int ImageHeight { get; set; }
@@ -33,12 +38,12 @@
     private void LoadImageData(string imageName)
     {
         ImageSource = $"/Images/{imageName}.jpg";
-        
+
         try
         {
             // Path to the image file on the server
             var filePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "Images", $"{imageName}.jpg");
-            
+
             if (File.Exists(filePath))
             {
                 // Identify image metadata without loading the full image into memory
@@ -48,11 +53,37 @@
                     ImageWidth = imageInfo.Width;
                     ImageHeight = imageInfo.Height;
                 }
+
+                //We only want to split the image if it exists
+                try
+                {
+                    //Split the image to store
+
+                    var imageSplitter = new ImageSplitter();
+
+                    //for square boards, the amount of blocks needs to be a perfect square
+                    //so, for a 4x4 board, we use 4 as the mod for rows and columns and 4^2 is our total amount of squares
+                    //we also need to use the image resolution to properly set the image in the correct coordinate
+                    var getBlocks = imageSplitter.SplitImage(filePath, 16);
+
+                    foreach (Image img in getBlocks)
+                    {
+                        var block = new ImageBlock(img);
+                        slidingPuzzleBlocks.Add(block);
+                    }
+
+                }
+                catch (Exception spl)
+                {
+                    Console.WriteLine($"Error while splitting image: {spl.Message}");
+                }
             }
         }
         catch (Exception ex)
         {
             Console.WriteLine($"Error reading image resolution: {ex.Message}");
         }
+
+        
     }
 }
