@@ -1,0 +1,31 @@
+﻿@inject NavigationManager navigationManager
+@page "/"
+@rendermode InteractiveServer
+
+<h3>Slide Masters</h3>
+
+<p>
+    Slide Masters is an interpretation of the Sliding Puzzle, a classic game where an image is divided into a grid of tiles and mixed up and you need to fix the image.
+</p>
+
+<p>
+    In this version, players can:
+    <ul>
+        <li>Upload custom images</li>
+        <li>Play with or without a timer for added challenge</li>
+        <li>Compete against your friend for the fastest time</li>
+    </ul>
+</p>
+
+<button class="btn btn-primary" @onclick="StartGame">Start Game</button>
+
+
+@code {
+    public void StartGame()
+    {
+        // Logic to start the game would go here
+        Console.WriteLine("Game started!");
+        navigationManager.NavigateTo("/game");
+        
+    }
+}
