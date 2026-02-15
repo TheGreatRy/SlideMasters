@@ -20,7 +20,18 @@
         {
             <p><strong>Resolution:</strong> @ImageWidth x @ImageHeight pixels</p>
         }
-        <img src="@ImageSource" alt="Selected Image" style="max-width: 100%; height: auto; border: 1px solid #ccc;" />
+
+
+
+
+        <div style="display: grid; grid-template-columns: repeat(4, 100px); gap: 5px;" margin: 5px;">
+        @foreach (var block in slidingPuzzleBlocks)
+        {
+                <img src="@block.DataUri" alt="Image Block" style="width: 100px; height: 100px; border: 1px solid black;" />
+        }
+        </div>
+
+        @* <img src="@ImageSource" alt="Selected Image" style="max-width: 100%; height: auto; border: 1px solid #ccc;" /> *@
     </div>
 }
 
@@ -34,11 +45,16 @@
     private string? ImageSource { get; set; }
     private int ImageWidth { get; set; }
     private int ImageHeight { get; set; }
+    private ImageSplitter imageSplitter = new ImageSplitter();
+    private int gridWidth = 4;
+    private int gridHeight = 4;
+    
+
 
     private void LoadImageData(string imageName)
     {
         ImageSource = $"/Images/{imageName}.jpg";
-
+        
         try
         {
             // Path to the image file on the server
@@ -58,17 +74,18 @@
                 {
                     //Split the image to store
 
-                    var imageSplitter = new ImageSplitter();
+                    
 
                     //for square boards, the amount of blocks needs to be a perfect square
                     //so, for a 4x4 board, we use 4 as the mod for rows and columns and 4^2 is our total amount of squares
                     //we also need to use the image resolution to properly set the image in the correct coordinate
-                    var getBlocks = imageSplitter.SplitImage(filePath, 16);
+                    var getBlocks = imageSplitter.SplitImage(filePath, gridHeight * gridWidth);
 
                     foreach (Image img in getBlocks)
                     {
                         var block = new ImageBlock(img);
                         slidingPuzzleBlocks.Add(block);
+                        
                     }
 
                 }
