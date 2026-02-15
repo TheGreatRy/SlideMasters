@@ -42,7 +42,6 @@
             
             if (File.Exists(filePath))
             {
-                // Identify image metadata without loading the full image into memory
                 var imageInfo = Image.Identify(filePath);
                 if (imageInfo != null)
                 {
