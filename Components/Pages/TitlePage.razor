@@ -17,14 +17,23 @@
     </ul>
 </p>
 
-<button class="btn btn-primary" @onclick="StartGame">Start Game</button>
+<button class="btn btn-primary" @onclick="() => StartGame(false)">Start Casual Game</button>
+<button class="btn btn-primary" @onclick="() => StartGame(true)">Start Timed Game</button>
 
 
 @code {
-    public void StartGame()
+    public void StartGame(bool timed)
     {
-        // Logic to start the game would go here
-        Console.WriteLine("Game started!");
+        if (timed)
+        {
+            // Logic to start the game with a timer would go here
+            Console.WriteLine("Game started with timer!");
+        }
+        else
+        {
+            // Logic to start the game without a timer would go here
+            Console.WriteLine("Game started without timer!");
+        }
         navigationManager.NavigateTo("/game");
         
     }

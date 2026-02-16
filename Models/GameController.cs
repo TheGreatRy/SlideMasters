@@ -24,12 +24,18 @@
             }
         }
 
-
+        /// <summary>
+        /// Checks if a move is valid based on the current position of the empty space and the block to be moved.
+        /// </summary>
         public void CanMove()
         {
 
         }
 
+        /// <summary>
+        /// Checks if the puzzle is completed.
+        /// </summary>
+        /// <returns>True if the puzzle is in order, False otherwise</returns>
         public bool IsCompleted()
         {
             for(int i = 0; i < slidingPuzzleBlocks.Count; i++)
