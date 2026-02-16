@@ -29,6 +29,19 @@
         {
 
         }
+
+        public bool IsCompleted()
+        {
+            for(int i = 0; i < slidingPuzzleBlocks.Count; i++)
+            {
+                var block = slidingPuzzleBlocks[i];
+                if (block.BoardX != i % 4 || block.BoardY != i / 4)
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
     }
 }
             

@@ -56,6 +56,7 @@
     private void OnClickBlock(int index)
     {
         ImageBlock clickedBlock = GameController.slidingPuzzleBlocks[index];
+
         // Implement logic to move the clicked block if it's adjacent to the empty space
     }
 
@@ -93,9 +94,9 @@
                         GameController.slidingPuzzleBlocks.Add(block);
                     }
                     GameController.slidingPuzzleBlocks.RemoveAt(GameController.slidingPuzzleBlocks.Count - 1);
-                    
+
                     ImageRandomizer.Shuffle<ImageBlock>(ref GameController.slidingPuzzleBlocks);
-                    
+                    bool yes = GameController.IsCompleted();
 
                 }
                 catch (Exception spl)
