@@ -25,10 +25,14 @@
 
 
         <div style="display: grid; grid-template-columns: repeat(4, 100px); gap: 5px;" margin: 5px;">
-        @foreach (var block in slidingPuzzleBlocks)
+
+        @for(int i = 0; i < GameController.slidingPuzzleBlocks.Count; i++)
         {
-                <img src="@block.DataUri" alt="Image Block" style="width: 100px; height: 100px; border: 1px solid black;" />
+            int index = i;
+            var block = GameController.slidingPuzzleBlocks[i];
+            <img src="@block.DataUri" @onclick="() => OnClickBlock(index)" alt="Image Block" style="width: 100px; height: 100px; border: 1px solid black;" />
         }
+        
         </div>
 
         @* <img src="@ImageSource" alt="Selected Image" style="max-width: 100%; height: auto; border: 1px solid #ccc;" /> *@
@@ -39,7 +43,7 @@
 @code
 {
     //main puzzle pieces
-    public List<ImageBlock> slidingPuzzleBlocks = new List<ImageBlock>();
+    public GameController GameController { get; set; } = new GameController();
 
     //Validate input image
     private string? ImageSource { get; set; }
@@ -48,13 +52,17 @@
     private ImageSplitter imageSplitter = new ImageSplitter();
     private int gridWidth = 4;
     private int gridHeight = 4;
-    
 
+    private void OnClickBlock(int index)
+    {
+        ImageBlock clickedBlock = GameController.slidingPuzzleBlocks[index];
+        // Implement logic to move the clicked block if it's adjacent to the empty space
+    }
 
     private void LoadImageData(string imageName)
     {
         ImageSource = $"/Images/{imageName}.jpg";
-        
+
         try
         {
             // Path to the image file on the server
@@ -74,19 +82,20 @@
                 {
                     //Split the image to store
 
-                    
-
                     //for square boards, the amount of blocks needs to be a perfect square
                     //so, for a 4x4 board, we use 4 as the mod for rows and columns and 4^2 is our total amount of squares
                     //we also need to use the image resolution to properly set the image in the correct coordinate
-                    var getBlocks = imageSplitter.SplitImage(filePath, gridHeight * gridWidth);
+                    var getBlocks = imageSplitter.SplitImage(filePath, (gridHeight * gridWidth));
 
-                    foreach (Image img in getBlocks)
+                    for(int i = 0; i < getBlocks.Count(); i++)
                     {
-                        var block = new ImageBlock(img);
-                        slidingPuzzleBlocks.Add(block);
-                        
+                        var block = new ImageBlock(getBlocks[i]) { BoardX= i % gridWidth, BoardY= (int)(i / gridWidth)};
+                        GameController.slidingPuzzleBlocks.Add(block);
                     }
+                    GameController.slidingPuzzleBlocks.RemoveAt(GameController.slidingPuzzleBlocks.Count - 1);
+                    
+                    ImageRandomizer.Shuffle<ImageBlock>(ref GameController.slidingPuzzleBlocks);
+                    
 
                 }
                 catch (Exception spl)
@@ -99,7 +108,5 @@
         {
             Console.WriteLine($"Error reading image resolution: {ex.Message}");
         }
-
-        
     }
 }

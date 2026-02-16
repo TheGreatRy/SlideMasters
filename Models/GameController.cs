@@ -1,5 +1,6 @@
 ﻿namespace SlideMasters_BlazorApp.Models
 {
+
     public enum GameState
     {
         Title,
@@ -8,6 +9,7 @@
     }
     public class GameController
     {
+        public List<ImageBlock> slidingPuzzleBlocks = new List<ImageBlock>();
         public GameState CurrentState { get; private set; }
         public GameController()
         {
@@ -20,6 +22,12 @@
             {
                 CurrentState = newState;
             }
+        }
+
+
+        public void CanMove()
+        {
+
         }
     }
 }
