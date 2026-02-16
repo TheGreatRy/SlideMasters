@@ -15,4 +15,8 @@
     <None Include="wwwroot\Images\toji.jpg" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Images\" />
+  </ItemGroup>
+
 </Project>

@@ -14,13 +14,18 @@ namespace SlideMasters_BlazorApp.Models
             {
                 if (splitCount > 0)
                 {
-                    int partWidth = image.Width / splitCount;
-                    int partHeight = image.Height / splitCount;
+                    int partSize = (int)Math.Sqrt(splitCount);
+                    if (partSize * partSize != splitCount)
+                    {
+                        throw new ArgumentException("splitCount must be a perfect square.");
+                    }
+                    int partWidth = image.Width / partSize;
+                    int partHeight = image.Height / partSize;
 
                     for (int i = 0; i < splitCount; i++)
                     {
                         var clone = image.Clone(ctx =>
-                            ctx.Crop(new SixLabors.ImageSharp.Rectangle(i * partWidth, 0, partWidth, image.Height)));
+                            ctx.Crop(new SixLabors.ImageSharp.Rectangle(( i % partSize) * partWidth, (i / partSize) * partHeight, partWidth, partHeight)));
 
                         splitImages[i] = clone;
                     }
