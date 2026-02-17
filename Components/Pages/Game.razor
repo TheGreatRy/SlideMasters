@@ -2,6 +2,7 @@
 @page "/Game"
 @using SixLabors.ImageSharp
 @using SlideMasters_BlazorApp.Models
+@using System.Timers
 
 <PageTitle>Home</PageTitle>
 
@@ -9,6 +10,7 @@
 
 <div class="mb-3">
     <button class="btn btn-primary" @onclick='() => LoadImageData("redToji")'>Load Toji Image</button>
+    <h4>@secondsRemaining</h4>
 </div>
 
 @if (ImageSource != null)
@@ -52,6 +54,9 @@
     private ImageSplitter imageSplitter = new ImageSplitter();
     private int gridWidth = 4;
     private int gridHeight = 4;
+
+    private int secondsRemaining { get; set; }
+    private Timer? timer { get; set; }
 
     private void OnClickBlock(int index)
     {
@@ -108,6 +113,29 @@
         catch (Exception ex)
         {
             Console.WriteLine($"Error reading image resolution: {ex.Message}");
+        }
+    }
+
+    private void StartTimer()
+    {
+        secondsRemaining = 60;
+        timer = new Timer(1000);
+        timer.Elapsed += OnTimedEvent;
+        timer.AutoReset = true;
+        timer.Enabled = true;
+    }
+
+    private void OnTimedEvent(object sender, ElapsedEventArgs e)
+    {
+        if (secondsRemaining > 0)
+        {
+            secondsRemaining--;
+        }
+        else
+        {
+            //Loop timer indefinitely until full split of home page and "game" page
+            timer?.Stop();
+            StartTimer();
         }
     }
 }
