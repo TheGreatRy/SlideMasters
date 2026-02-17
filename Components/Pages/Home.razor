@@ -1,5 +1,6 @@
 ﻿@page "/"
 @using SixLabors.ImageSharp
+@using System.Timers
 
 <PageTitle>Home</PageTitle>
 
@@ -7,6 +8,7 @@
 
 <div class="mb-3">
     <button class="btn btn-primary" @onclick='() => LoadImageData("toji")'>Load Toji Image</button>
+    <h4 class="">@time</h4>
 </div>
 
 @if (ImageSource != null)
@@ -28,16 +30,20 @@
     private string? ImageSource { get; set; }
     private int ImageWidth { get; set; }
     private int ImageHeight { get; set; }
+    private int time { get; set; }
+    private Timer? timer { get; set; }
 
     private void LoadImageData(string imageName)
     {
+        StartTimer();
+
         ImageSource = $"Images/{imageName}.jpg";
-        
+
         try
         {
             // Path to the image file on the server
             var filePath = Path.Combine(Directory.GetCurrentDirectory(), "Images", $"{imageName}.jpg");
-            
+
             if (File.Exists(filePath))
             {
                 // Identify image metadata without loading the full image into memory
@@ -52,6 +58,29 @@
         catch (Exception ex)
         {
             Console.WriteLine($"Error reading image resolution: {ex.Message}");
+        }
+    }
+
+    private void StartTimer()
+    {
+        time = 60;
+        timer = new Timer(1000);
+        timer.Elapsed += OnTimedEvent;
+        timer.AutoReset = true;
+        timer.Enabled = true;
+    }
+
+    private void OnTimedEvent(object sender, ElapsedEventArgs e)
+    {
+        if (time > 0)
+        {
+            time--;
+        }
+        else
+        {
+            //Loop timer indefinitely until full split of home page and "game" page
+            timer.Stop();
+            StartTimer();
         }
     }
 }
