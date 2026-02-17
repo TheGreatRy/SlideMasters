@@ -21,16 +21,16 @@
             <p><strong>Resolution:</strong> @ImageWidth x @ImageHeight pixels</p>
         }
 
-
-
-
-        <div style="display: grid; grid-template-columns: repeat(4, 100px); gap: 5px;" margin: 5px;">
+        <div style="display: grid; grid-template-columns: repeat(4, 100px); gap: 5px; margin: 5px;">
+        @*<div style="display:flex; flex-wrap:wrap; gap: 5px; margin: 5px>*@
 
         @for(int i = 0; i < GameController.slidingPuzzleBlocks.Count; i++)
         {
-            int index = i;
-            var block = GameController.slidingPuzzleBlocks[i];
-            <img src="@block.DataUri" @onclick="() => OnClickBlock(index)" alt="Image Block" style="width: 100px; height: 100px; border: 1px solid black;" />
+                if (emptyBlockIndex != 4)
+                {
+                    var block = GameController.slidingPuzzleBlocks[i];
+                    <img src="@block.DataUri" @onclick="() => OnClickBlock(i)" alt="Image Block" style="width: 100px; height: 100px; border: 1px solid black;" />
+                }
         }
         
         </div>
@@ -44,11 +44,13 @@
 {
     //main puzzle pieces
     public GameController GameController { get; set; } = new GameController();
+    public int emptyBlockIndex = 0;
 
     //Validate input image
     private string? ImageSource { get; set; }
     private int ImageWidth { get; set; }
     private int ImageHeight { get; set; }
+
     private ImageSplitter imageSplitter = new ImageSplitter();
     private int gridWidth = 4;
     private int gridHeight = 4;
@@ -86,15 +88,17 @@
                     //for square boards, the amount of blocks needs to be a perfect square
                     //so, for a 4x4 board, we use 4 as the mod for rows and columns and 4^2 is our total amount of squares
                     //we also need to use the image resolution to properly set the image in the correct coordinate
+
                     var getBlocks = imageSplitter.SplitImage(filePath, (gridHeight * gridWidth));
 
                     for(int i = 0; i < getBlocks.Count(); i++)
                     {
-                        var block = new ImageBlock(getBlocks[i]) { BoardX= i % gridWidth, BoardY= (int)(i / gridWidth)};
+                        var block = new ImageBlock(getBlocks[i]) { BoardX = i % gridWidth, BoardY = (int)(i / gridWidth)};
                         GameController.slidingPuzzleBlocks.Add(block);
                     }
-                    GameController.slidingPuzzleBlocks.RemoveAt(GameController.slidingPuzzleBlocks.Count - 1);
 
+                    emptyBlockIndex = GameController.slidingPuzzleBlocks.Count - 1;
+                    GameController.slidingPuzzleBlocks.RemoveAt(emptyBlockIndex);
                     ImageRandomizer.Shuffle<ImageBlock>(ref GameController.slidingPuzzleBlocks);
                     
 
