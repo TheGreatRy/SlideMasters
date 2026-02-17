@@ -6,7 +6,7 @@ namespace SlideMasters_BlazorApp.Models
     public class ImageBlock
     {
         public Image Image { get; set; }
-
+        public string DataUri => ConvertImageToDataUri(Image);
         public int Width { get; set; }
         public int Height { get; set; }
 
@@ -24,6 +24,15 @@ namespace SlideMasters_BlazorApp.Models
         {
             BoardX += deltaX;
             BoardY += deltaY;
+        }
+
+        private string ConvertImageToDataUri(Image image)
+        {
+            using var ms = new MemoryStream();
+            image.SaveAsPng(ms); // or SaveAsJpeg
+            var imageBytes = ms.ToArray();
+            var base64String = Convert.ToBase64String(imageBytes);
+            return $"data:image/png;base64,{base64String}";
         }
     }
 }
