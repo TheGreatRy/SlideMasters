@@ -68,6 +68,8 @@
 
     private void LoadImageData(string imageName)
     {
+        StartTimer();
+
         ImageSource = $"/Images/{imageName}.jpg";
 
         try
@@ -133,6 +135,7 @@
         if (secondsRemaining > 0)
         {
             secondsRemaining--;
+            InvokeAsync(StateHasChanged);
         }
         else
         {
