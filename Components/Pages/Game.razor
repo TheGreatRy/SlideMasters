@@ -67,6 +67,8 @@
 
     private void LoadImageData(string imageName)
     {
+        StartTimer();
+
         ImageSource = $"/Images/{imageName}.jpg";
 
         try
@@ -101,7 +103,7 @@
                     GameController.slidingPuzzleBlocks.RemoveAt(GameController.slidingPuzzleBlocks.Count - 1);
 
                     ImageRandomizer.Shuffle<ImageBlock>(ref GameController.slidingPuzzleBlocks);
-                    
+
 
                 }
                 catch (Exception spl)
@@ -130,6 +132,7 @@
         if (secondsRemaining > 0)
         {
             secondsRemaining--;
+            InvokeAsync(StateHasChanged);
         }
         else
         {
