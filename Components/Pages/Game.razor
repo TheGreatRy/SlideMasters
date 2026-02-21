@@ -1,6 +1,7 @@
 ﻿@rendermode InteractiveServer
 @page "/Game"
 @using SixLabors.ImageSharp
+@using SixLabors.ImageSharp.Processing
 @using SlideMasters_BlazorApp.Models
 @using System.Timers
 
@@ -75,7 +76,7 @@
         try
         {
             // Path to the image file on the server
-            var filePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "Images", $"{imageName}.jpg");
+            var filePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "Images", "Static", $"{imageName}.jpg");
 
             if (File.Exists(filePath))
             {
@@ -103,9 +104,18 @@
                         GameController.slidingPuzzleBlocks.Add(block);
                     }
 
+                    //
                     emptyBlockIndex = GameController.slidingPuzzleBlocks.Count - 1;
                     GameController.slidingPuzzleBlocks.RemoveAt(emptyBlockIndex);
+
+                    var emptyBlock = Image.Load(Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "Images", "Static", "empty_block.png"));
+
+                    emptyBlock.Mutate(context => context.Resize(ImageWidth / gridWidth, ImageHeight / gridHeight));
+
+                    var imgEmptyBlock = new ImageBlock(emptyBlock) { BoardX = (emptyBlockIndex + 1) % gridWidth, BoardY = (int)((emptyBlockIndex + 1) / gridWidth) };
+
                     ImageRandomizer.Shuffle<ImageBlock>(ref GameController.slidingPuzzleBlocks);
+                    GameController.slidingPuzzleBlocks.Add(imgEmptyBlock);
 
 
                 }
