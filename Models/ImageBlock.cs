@@ -13,6 +13,8 @@ namespace SlideMasters_BlazorApp.Models
         public int BoardX { get; set; }
         public int BoardY { get; set; }
 
+        public bool IsEmptyBlock { get; set; } = false;
+
         public ImageBlock(Image image)
         {
             Image = image;

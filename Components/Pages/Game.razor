@@ -27,17 +27,18 @@
         @*<div style="display:flex; flex-wrap:wrap; gap: 5px; margin: 5px>*@
 
         <div style="display: grid; grid-template-columns: repeat(4, 100px); gap: 5px; margin: 5px;">
-
-            @for (int i = 0; i < GameController.slidingPuzzleBlocks.Count; i++)
+            @if (GameController.slidingPuzzleBlocks.Count > 0)
             {
-                var block = GameController.slidingPuzzleBlocks[i];
-                <img src="@block.DataUri" @onclick="() => OnClickBlock(i)" alt="Image Block" style="width: 100px; height: 100px; border: 1px solid black;" />
+                @for (int i = 0; i < GameController.slidingPuzzleBlocks.Count; i++)
+                {
+                    var block = GameController.slidingPuzzleBlocks[i];
+                    <img src = "@block.DataUri" @onclick = "() => OnClickBlock(i)" alt = "Image Block" style = "width: 100px; height: 100px; border: 1px solid black;" />
+                    
 
+                }
             }
 
         </div>
-
-        @* <img src="@ImageSource" alt="Selected Image" style="max-width: 100%; height: auto; border: 1px solid #ccc;" /> *@
     </div>
 }
 
@@ -62,16 +63,20 @@
 
     private void OnClickBlock(int index)
     {
-        ImageBlock clickedBlock = GameController.slidingPuzzleBlocks[index];
+        if (index < GameController.slidingPuzzleBlocks.Count) 
+        {
+            ImageBlock clickedBlock = GameController.slidingPuzzleBlocks[index];
+            // i need to do math raaaaaaa
+            // Implement logic to move the clicked block if it's adjacent to the empty space
+        }
 
-        // Implement logic to move the clicked block if it's adjacent to the empty space
     }
 
     private void LoadImageData(string imageName)
     {
         StartTimer();
 
-        ImageSource = $"/Images/{imageName}.jpg";
+        ImageSource = $"/Images/Static/{imageName}.jpg";
 
         try
         {
@@ -104,17 +109,20 @@
                         GameController.slidingPuzzleBlocks.Add(block);
                     }
 
-                    //
+                    //Remove the last block to allow an empty image to be added
                     emptyBlockIndex = GameController.slidingPuzzleBlocks.Count - 1;
                     GameController.slidingPuzzleBlocks.RemoveAt(emptyBlockIndex);
 
-                    var emptyBlock = Image.Load(Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "Images", "Static", "empty_block.png"));
-
-                    emptyBlock.Mutate(context => context.Resize(ImageWidth / gridWidth, ImageHeight / gridHeight));
-
-                    var imgEmptyBlock = new ImageBlock(emptyBlock) { BoardX = (emptyBlockIndex + 1) % gridWidth, BoardY = (int)((emptyBlockIndex + 1) / gridWidth) };
-
+                    //Shuffle the existing pieces
                     ImageRandomizer.Shuffle<ImageBlock>(ref GameController.slidingPuzzleBlocks);
+
+                    //Get the empty block and create an Image block from it
+                    //It is resized to match the existing puzzle block dimensions
+                    var emptyBlock = Image.Load(Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "Images", "Static", "empty_block.png"));
+                    emptyBlock.Mutate(context => context.Resize(ImageWidth / gridWidth, ImageHeight / gridHeight));
+                    var imgEmptyBlock = new ImageBlock(emptyBlock) { BoardX = (emptyBlockIndex) % gridWidth, BoardY = (int)((emptyBlockIndex) / gridWidth), IsEmptyBlock = true };
+                    
+                    //Add the empty block to the end
                     GameController.slidingPuzzleBlocks.Add(imgEmptyBlock);
 
 
