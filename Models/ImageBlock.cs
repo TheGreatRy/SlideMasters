@@ -9,10 +9,9 @@ namespace SlideMasters_BlazorApp.Models
         public string DataUri => ConvertImageToDataUri(Image);
         public int Width { get; set; }
         public int Height { get; set; }
-
         public int BoardX { get; set; }
         public int BoardY { get; set; }
-
+        public int BoardID { get; set; }
         public bool IsEmptyBlock { get; set; } = false;
 
         public ImageBlock(Image image)
