@@ -1,13 +1,14 @@
 ﻿@inject NavigationManager navigationManager
+@inject IWebHostEnvironment Enviroment
 @page "/"
 @rendermode InteractiveServer
 
 <h3>Slide Masters</h3>
 
+
 <p>
     Slide Masters is an interpretation of the Sliding Puzzle, a classic game where an image is divided into a grid of tiles and mixed up and you need to fix the image.
 </p>
-
 <p>
     In this version, players can:
     <ul>
@@ -16,25 +17,63 @@
         <li>Compete against your friend for the fastest time</li>
     </ul>
 </p>
+<div class="mb-4">
+    <h5>Option 1: Upload an Image</h5>
+    <InputFile OnChange="HandleFileSelected" class="form-control"></InputFile>
+</div>
+
+<div class="mb-4">
+    <h5>Option 2: Use Image URL</h5>
+    <div class="input-group">
+        <input type="text" @bind="imageUrl" class="form-control" placeholder="https://example.com/image.jpg" />
+        <button class="btn btn-secondary" @onclick="LoadFromUrl">Load URL</button>
+    </div>
+</div>
 
 <button class="btn btn-primary" @onclick="() => StartGame(false)">Start Casual Game</button>
 <button class="btn btn-primary" @onclick="() => StartGame(true)">Start Timed Game</button>
 
 
+
+
 @code {
+    private string? selectedImagePath;
+    private string? imageUrl;
+
+    private async Task HandleFileSelected(InputFileChangeEventArgs e)
+    {
+        var file = e.File;
+        if (file != null)
+        {
+            var folderPath = Path.Combine(Enviroment.WebRootPath, "Images", "User");
+            if (!Directory.Exists(folderPath)) Directory.CreateDirectory(folderPath);
+
+            var fileName = $"{Guid.NewGuid()}{Path.GetExtension(file.Name)}";
+            var path = Path.Combine(folderPath, fileName);
+
+            await using var stream = file.OpenReadStream(maxAllowedSize: 1024 * 1024 * 10); // 10MB limit
+            await using var fs = new FileStream(path, FileMode.Create);
+            await stream.CopyToAsync(fs);
+
+            selectedImagePath = $"/Images/User/{fileName}";
+        }
+    }
+
+    private void LoadFromUrl()
+    {
+        if (!string.IsNullOrEmpty(imageUrl))
+        {
+            selectedImagePath = imageUrl;
+        }
+    }
     public void StartGame(bool timed)
     {
-        if (timed)
+        var url = navigationManager.GetUriWithQueryParameters("/game", new Dictionary<string, object?>
         {
-            // Logic to start the game with a timer would go here
-            Console.WriteLine("Game started with timer!");
-        }
-        else
-        {
-            // Logic to start the game without a timer would go here
-            Console.WriteLine("Game started without timer!");
-        }
-        navigationManager.NavigateTo("/game");
+            { "imagePath", selectedImagePath ?? "/Images/Static/redToji.jpg" },
+            { "isTimed", timed }
+        });
+        navigationManager.NavigateTo(url);
         
     }
 }
