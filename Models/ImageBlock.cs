@@ -6,7 +6,7 @@ namespace SlideMasters_BlazorApp.Models
     public class ImageBlock
     {
         public Image Image { get; set; }
-        public string DataUri => ConvertImageToDataUri(Image);
+        public string DataUri { get; private set; }
         public int Width { get; set; }
         public int Height { get; set; }
         public int BoardX { get; set; }
@@ -19,6 +19,7 @@ namespace SlideMasters_BlazorApp.Models
             Image = image;
             Width = image.Width;
             Height = image.Height;
+            DataUri = ConvertImageToDataUri(image);
         }
 
         public void MovePiece(int deltaX, int deltaY)
