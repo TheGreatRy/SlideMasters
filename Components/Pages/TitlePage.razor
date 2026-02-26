@@ -1,6 +1,7 @@
 ﻿@inject NavigationManager navigationManager
 @inject IWebHostEnvironment Enviroment
 @page "/"
+@using SlideMasters_BlazorApp.Models
 @rendermode InteractiveServer
 
 <h3>Slide Masters</h3>
@@ -31,14 +32,34 @@
 </div>
 
 <button class="btn btn-primary" @onclick="() => StartGame(false)">Start Casual Game</button>
-<button class="btn btn-primary" @onclick="() => StartGame(true)">Start Timed Game</button>
+<button class="btn btn-primary" @onclick="() => StartGame(true)">Start Ranked Game</button>
 
+<button class="btn btn-secondary">Easy</button>
+<button class="btn btn-secondary">Medium</button>
+<button class="btn btn-secondary">Hard</button>
 
 
 
 @code {
     private string? selectedImagePath;
     private string? imageUrl;
+
+
+    public void ChooseDifficulty(DifficultyLevel difficultyLevel)
+    {
+        switch (difficultyLevel)
+        {
+            case DifficultyLevel.Easy:
+                // Set up easy difficulty settings
+                break;
+            case DifficultyLevel.Medium:
+                // Set up medium difficulty settings
+                break;
+            case DifficultyLevel.Hard:
+                // Set up hard difficulty settings
+                break;
+        }
+    }
 
     private async Task HandleFileSelected(InputFileChangeEventArgs e)
     {
