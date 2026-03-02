@@ -33,8 +33,7 @@
             <p><strong>CONGRATS, YOU HAVE COMPLETED THE PUZZLE!!! :D</strong></p>
         }
 
-        <div style="display: grid; grid-template-columns: repeat(4, 100px); gap: 5px; margin: 5px;">
-            
+        <div style="display: grid; grid-template-columns: repeat(@gridWidth, 100px); gap: 5px; margin: 5px;">
             @if (GameController.slidingPuzzleBlocks.Count > 0)
             {
                 //Draw puzzle grid
@@ -53,11 +52,17 @@
     [Parameter][SupplyParameterFromQuery] public string? ImagePath { get; set; }
     [Parameter][SupplyParameterFromQuery] public bool IsTimed { get; set; }
 
+    [Parameter][SupplyParameterFromQuery] public DifficultyLevel DifficultyLevel { get; set; }
+
     //Public
     public GameController GameController { get; set; } = new GameController();
     public int emptyBlockIndex = 0;
     public bool hasLoaded = false;
     public bool hasWon = false;
+
+    private int startingTime = 60;
+    
+
 
     //Private
     private string? ImageSource { get; set; }
@@ -281,6 +286,25 @@
         timer.Elapsed += OnTimedEvent;
         timer.AutoReset = true;
         timer.Enabled = true;
+    }
+
+    private void DetermineGridSize()
+    {
+        switch (DifficultyLevel)
+        {
+            case DifficultyLevel.Easy:
+                gridWidth = 3;
+                gridHeight = 3;
+                break;
+            case DifficultyLevel.Medium:
+                gridWidth = 4;
+                gridHeight = 4;
+                break;
+            case DifficultyLevel.Hard:
+                gridWidth = 5;
+                gridHeight = 5;
+                break;
+        }
     }
 
     private void OnTimedEvent(object sender, ElapsedEventArgs e)

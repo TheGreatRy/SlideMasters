@@ -1,0 +1,32 @@
+﻿@rendermode InteractiveServer
+@page "/highscores"
+
+@using SlideMasters_BlazorApp.Models
+@inject DBContextService contextService
+
+<h3>HighScores</h3>
+
+<div>
+    <p>Here are the high scores for the game:</p>
+    <div class="">
+        <button>Easy</button>
+        <button>Medium</button>
+        <button>Hard</button>
+    </div>
+    
+    <ul>
+        @foreach(var score in Scores)
+        {
+            <li>@score.Username: @score.Score s</li>
+        }
+    </ul>
+</div>
+
+@code {
+    List<GameScore> Scores { get; set; } = new List<GameScore>();
+    DifficultyLevel DifficultyLevel { get; set; } = DifficultyLevel.Easy;
+    protected override void OnInitialized()
+    {
+        Scores = contextService.GetAllScores();
+    }
+}
