@@ -1,9 +1,12 @@
-﻿using System.Security.Cryptography.X509Certificates;
+﻿using Microsoft.EntityFrameworkCore;
+using System.Security.Cryptography.X509Certificates;
 
 namespace SlideMasters_BlazorApp.Models
 {
+    [PrimaryKey("ID")]
     public class User
     {
+        public int ID { get; set; }
         public string Username { get; set; }
         public List<GameScore> GameScores { get; set; } = new List<GameScore>();
 
@@ -31,7 +34,5 @@ namespace SlideMasters_BlazorApp.Models
                 GameScores.Add(newScore);
             }
         }
-
-
     }
 }

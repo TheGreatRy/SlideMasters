@@ -34,19 +34,18 @@
 <button class="btn btn-primary" @onclick="() => StartGame(false)">Start Casual Game</button>
 <button class="btn btn-primary" @onclick="() => StartGame(true)">Start Ranked Game</button>
 
-<button class="btn btn-secondary">Easy</button>
-<button class="btn btn-secondary">Medium</button>
-<button class="btn btn-secondary">Hard</button>
-
-
+<button class="btn btn-secondary" @onclick="() => ChooseDifficulty(DifficultyLevel.Easy)">Easy</button>
+<button class="btn btn-secondary" @onclick="() => ChooseDifficulty(DifficultyLevel.Medium)">Medium</button>
+<button class="btn btn-secondary" @onclick="() => ChooseDifficulty(DifficultyLevel.Hard)">Hard</button>
 
 @code {
     private string? selectedImagePath;
     private string? imageUrl;
-
+    private DifficultyLevel DifficultyLevel { get; set; } = DifficultyLevel.Easy;
 
     public void ChooseDifficulty(DifficultyLevel difficultyLevel)
     {
+        DifficultyLevel = difficultyLevel;
         switch (difficultyLevel)
         {
             case DifficultyLevel.Easy:
@@ -92,7 +91,8 @@
         var url = navigationManager.GetUriWithQueryParameters("/game", new Dictionary<string, object?>
         {
             { "imagePath", selectedImagePath ?? "/Images/Static/redToji.jpg" },
-            { "isTimed", timed }
+            { "isTimed", timed },
+            { "difficultyLevel", DifficultyLevel }
         });
         navigationManager.NavigateTo(url);
         

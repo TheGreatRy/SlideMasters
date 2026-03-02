@@ -1,4 +1,8 @@
-﻿namespace SlideMasters_BlazorApp.Models
+﻿
+
+using Microsoft.EntityFrameworkCore;
+
+namespace SlideMasters_BlazorApp.Models
 {
     public enum DifficultyLevel
     {
@@ -7,8 +11,10 @@
         Hard
     }
 
+    [PrimaryKey("ID")]
     public class GameScore
     {
+        public uint ID { get; set; }
         public string Username { get; set; }
         public int Score { get; set; }
 
