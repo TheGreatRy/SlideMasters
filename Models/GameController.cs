@@ -43,18 +43,24 @@
 
         public void SwapBlocks(int firstIndex, int secondIndex)
         {
-            //we need to update the image data FIRST then update the board positions
-            var storeFirst = slidingPuzzleBlocks[firstIndex];
-            var storeSecond = slidingPuzzleBlocks[secondIndex];
+            //Store original board positions
+            var firstX = slidingPuzzleBlocks[firstIndex].BoardX;
+            var firstY = slidingPuzzleBlocks[firstIndex].BoardY;
+            
+            var secondX = slidingPuzzleBlocks[secondIndex].BoardX;
+            var secondY = slidingPuzzleBlocks[secondIndex].BoardY;
 
-            slidingPuzzleBlocks[firstIndex] = storeSecond;
-            slidingPuzzleBlocks[firstIndex].BoardX = storeFirst.BoardX;
-            slidingPuzzleBlocks[firstIndex].BoardY = storeFirst.BoardY;
+            //Swap blocks
+            var temp = slidingPuzzleBlocks[firstIndex];
+            slidingPuzzleBlocks[firstIndex] = slidingPuzzleBlocks[secondIndex];
+            slidingPuzzleBlocks[secondIndex] = temp;
 
-            slidingPuzzleBlocks[secondIndex] = storeFirst;
-            slidingPuzzleBlocks[secondIndex].BoardX = storeSecond.BoardX;
-            slidingPuzzleBlocks[secondIndex].BoardY = storeSecond.BoardY;
+            //Since the swap includes the board x and y, use stored values to correct position
+            slidingPuzzleBlocks[firstIndex].BoardX = firstX;
+            slidingPuzzleBlocks[firstIndex].BoardY = firstY;
 
+            slidingPuzzleBlocks[secondIndex].BoardX = secondX;
+            slidingPuzzleBlocks[secondIndex].BoardY = secondY;
         }
     }
 }
