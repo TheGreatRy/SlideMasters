@@ -21,12 +21,6 @@ namespace SlideMasters_BlazorApp.Models
             Height = image.Height;
         }
 
-        public void MovePiece(int deltaX, int deltaY)
-        {
-            BoardX += deltaX;
-            BoardY += deltaY;
-        }
-
         private string ConvertImageToDataUri(Image image)
         {
             using var ms = new MemoryStream();

@@ -1,29 +1,31 @@
 ﻿@rendermode InteractiveServer
 @page "/Game"
+@using Microsoft.EntityFrameworkCore
 @using SixLabors.ImageSharp
 @using SixLabors.ImageSharp.Processing
 @using SlideMasters_BlazorApp.Models
 @using System.Timers
 @using SixLabors.ImageSharp.PixelFormats
 @inject IWebHostEnvironment Enviroment
+@inject IWebHostEnvironment Environment
 @inject NavigationManager NavigationManager
 @inject HttpClient HttpClient
+@inject IDbContextFactory<DBContextService> DbFactory
 
 <PageTitle>Home</PageTitle>
 
 <h1>Image Viewer</h1>
 
-<div class="mb-3">
-    <button class="btn btn-primary" @onclick='() => LoadImageData("redToji")'>Load Toji Image</button>
-</div>
-
-@if (hasLoaded)
+@if (hasLoaded && IsTimed)
 {
     <h4>@secondsRemaining</h4>
 }
 
 @if (ImageSource != null)
 {
+    //Check win condition
+    hasWon = GameController.IsCompleted();
+
     <div>
         <h3>Image Information</h3>
         <p><strong>Path:</strong> @ImageSource</p>
@@ -42,17 +44,14 @@
             </div>
         }
 
-        <div style="display: grid; grid-template-columns: repeat(4, 100px); gap: 5px; margin: 5px;">
+        <div style="display: grid; grid-template-columns: repeat(@gridWidth, 100px); gap: 5px; margin: 5px;">
             @if (GameController.slidingPuzzleBlocks.Count > 0)
             {
                 //Draw puzzle grid
                 for (int i = 0; i < GameController.slidingPuzzleBlocks.Count; i++)
                 {
-                    @UpdateBlocks(i)
-                    ;
+                    @UpdateBlocks(i);
                 }
-                //Check win condition
-                hasWon = GameController.IsCompleted();
             }
         </div>
     </div>
@@ -69,14 +68,21 @@
 @code
 {
     [Parameter][SupplyParameterFromQuery] public string? ImagePath { get; set; }
-
     [Parameter][SupplyParameterFromQuery] public bool IsTimed { get; set; }
+
+    [Parameter][SupplyParameterFromQuery(Name = "level")] public int difficultyLevel { get; set; }
+    public DifficultyLevel DifficultyLevel => (DifficultyLevel)difficultyLevel;
+
 
     //Public
     public GameController GameController { get; set; } = new GameController();
     public int emptyBlockIndex = 0;
     public bool hasLoaded = false;
     public bool hasWon = false;
+
+    private int startingTime = 60;
+    
+
 
     //Private
     private string? ImageSource { get; set; }
@@ -91,6 +97,21 @@
     private int secondsRemaining { get; set; }
     private Timer? timer { get; set; }
 
+    protected override void OnInitialized()
+    {
+        if (string.IsNullOrEmpty(ImagePath))
+        {
+            ImagePath = "/Images/Static/redToji.jpg"; // Default fallback
+        }
+
+        LoadImageData(ImagePath);
+
+        if (IsTimed)
+        {
+            StartTimer();
+        }
+    }
+
     //Render the blocks as the values change (must be rendered in code)
     private RenderFragment<int> UpdateBlocks => value => __builder =>
     {
@@ -104,8 +125,6 @@
             <img src="@block.DataUri" @onclick="(() => OnClickBlock(value))" alt="Image Block" style="width: 100px; height: 100px; border: 1px solid black;" />
         }
     };
-
-    
 
     //Updates and swaps blocks if the clicked block is adjacent to the empty block
     private void OnClickBlock(int index)
@@ -131,8 +150,8 @@
                     //block above clicked block
                     int secondIndex = GetImageBlockIndex(clickedBlock.BoardX, clickedBlock.BoardY - 1);
 
-                    //if it's empty, swap
-                    if (GameController.slidingPuzzleBlocks[secondIndex].IsEmptyBlock)
+                    //if it's empty && not out of bounds, swap
+                    if (GameController.slidingPuzzleBlocks[secondIndex].IsEmptyBlock && secondIndex != -1)
                     {
                         GameController.SwapBlocks(firstIndex, secondIndex);
                         return;
@@ -143,8 +162,8 @@
                     //block under clicked block
                     int secondIndex = GetImageBlockIndex(clickedBlock.BoardX, clickedBlock.BoardY + 1);
 
-                    //if it's empty, swap
-                    if (GameController.slidingPuzzleBlocks[secondIndex].IsEmptyBlock)
+                    //if it's empty && not out of bounds, swap
+                    if (GameController.slidingPuzzleBlocks[secondIndex].IsEmptyBlock && secondIndex != -1)
                     {
                         GameController.SwapBlocks(firstIndex, secondIndex);
                         return;
@@ -155,8 +174,8 @@
                     //block to the left of clicked block
                     int secondIndex = GetImageBlockIndex(clickedBlock.BoardX - 1, clickedBlock.BoardY);
 
-                    //if it's empty, swap
-                    if (GameController.slidingPuzzleBlocks[secondIndex].IsEmptyBlock)
+                    //if it's empty && not out of bounds, swap
+                    if (GameController.slidingPuzzleBlocks[secondIndex].IsEmptyBlock && secondIndex != -1)
                     {
                         GameController.SwapBlocks(firstIndex, secondIndex);
                         return;
@@ -167,8 +186,8 @@
                     //block to the right of clicked block
                     int secondIndex = GetImageBlockIndex(clickedBlock.BoardX + 1, clickedBlock.BoardY);
 
-                    //if it's empty, swap
-                    if (GameController.slidingPuzzleBlocks[secondIndex].IsEmptyBlock)
+                    //if it's empty && not out of bounds, swap
+                    if (GameController.slidingPuzzleBlocks[secondIndex].IsEmptyBlock && secondIndex != -1)
                     {
                         GameController.SwapBlocks(firstIndex, secondIndex);
                         return;
@@ -328,25 +347,46 @@
 
     private void StartTimer()
     {
-        secondsRemaining = 60;
+        secondsRemaining = 0;
         timer = new Timer(1000);
         timer.Elapsed += OnTimedEvent;
         timer.AutoReset = true;
         timer.Enabled = true;
     }
 
+    private void DetermineGridSize()
+    {
+        switch (DifficultyLevel)
+        {
+            case DifficultyLevel.Easy:
+                gridWidth = 3;
+                gridHeight = 3;
+                break;
+            case DifficultyLevel.Medium:
+                gridWidth = 4;
+                gridHeight = 4;
+                break;
+            case DifficultyLevel.Hard:
+                gridWidth = 5;
+                gridHeight = 5;
+                break;
+        }
+    }
+
     private void OnTimedEvent(object sender, ElapsedEventArgs e)
     {
-        if (secondsRemaining > 0)
+        if (!hasWon)
         {
-            secondsRemaining--;
+            //Increment timer while solving
+            secondsRemaining++;
             InvokeAsync(StateHasChanged);
         }
         else
         {
-            //Loop timer indefinitely until full split of home page and "game" page
+            //Increase time until player has completed puzzle
             timer?.Stop();
-            StartTimer();
+            using var context = DbFactory.CreateDbContext();
+            context.AddNewScore(new GameScore("RealPlayer", 100, DifficultyLevel.Easy));
         }
     }
 }

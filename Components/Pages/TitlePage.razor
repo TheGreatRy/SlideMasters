@@ -1,6 +1,7 @@
 ﻿@inject NavigationManager navigationManager
-@inject IWebHostEnvironment Enviroment
+@inject IWebHostEnvironment Environment
 @page "/"
+@using SlideMasters_BlazorApp.Models
 @rendermode InteractiveServer
 
 <h3>Slide Masters</h3>
@@ -48,10 +49,11 @@
 </div>
 
 <button class="btn btn-primary" @onclick="() => StartGame(false)">Start Casual Game</button>
-<button class="btn btn-primary" @onclick="() => StartGame(true)">Start Timed Game</button>
+<button class="btn btn-primary" @onclick="() => StartGame(true)">Start Ranked Game</button>
 
-
-
+<button class="btn btn-secondary" @onclick="() => ChooseDifficulty(DifficultyLevel.Easy)">Easy</button>
+<button class="btn btn-secondary" @onclick="() => ChooseDifficulty(DifficultyLevel.Medium)">Medium</button>
+<button class="btn btn-secondary" @onclick="() => ChooseDifficulty(DifficultyLevel.Hard)">Hard</button>
 
 @code {
     private string? selectedImagePath;
@@ -60,6 +62,24 @@
     private string? urlPreview;
     private bool isLoadingUrl = false;
  
+    private DifficultyLevel DifficultyLevel { get; set; } = DifficultyLevel.Easy;
+
+    public void ChooseDifficulty(DifficultyLevel difficultyLevel)
+    {
+        DifficultyLevel = difficultyLevel;
+        switch (difficultyLevel)
+        {
+            case DifficultyLevel.Easy:
+                // Set up easy difficulty settings
+                break;
+            case DifficultyLevel.Medium:
+                // Set up medium difficulty settings
+                break;
+            case DifficultyLevel.Hard:
+                // Set up hard difficulty settings
+                break;
+        }
+    }
 
     private async Task HandleFileSelected(InputFileChangeEventArgs e)
     {
@@ -71,6 +91,7 @@
             urlError = null;
 
             var folderPath = Path.Combine(Enviroment.WebRootPath, "Images", "User");
+            var folderPath = Path.Combine(Environment.WebRootPath, "Images", "User");
             if (!Directory.Exists(folderPath)) Directory.CreateDirectory(folderPath);
 
             var fileName = $"{Guid.NewGuid()}{Path.GetExtension(file.Name)}";
@@ -153,7 +174,8 @@
         var url = navigationManager.GetUriWithQueryParameters("/game", new Dictionary<string, object?>
         {
             { "imagePath", selectedImagePath ?? "/Images/Static/redToji.jpg" },
-            { "isTimed", timed }
+            { "isTimed", timed },
+            { "difficultyLevel", (int)DifficultyLevel }
         });
         navigationManager.NavigateTo(url);
     }
