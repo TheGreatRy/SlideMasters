@@ -1,5 +1,5 @@
 ﻿@inject NavigationManager navigationManager
-@inject IWebHostEnvironment Enviroment
+@inject IWebHostEnvironment Environment
 @page "/"
 @rendermode InteractiveServer
 
@@ -45,7 +45,7 @@
         var file = e.File;
         if (file != null)
         {
-            var folderPath = Path.Combine(Enviroment.WebRootPath, "Images", "User");
+            var folderPath = Path.Combine(Environment.WebRootPath, "Images", "User");
             if (!Directory.Exists(folderPath)) Directory.CreateDirectory(folderPath);
 
             var fileName = $"{Guid.NewGuid()}{Path.GetExtension(file.Name)}";

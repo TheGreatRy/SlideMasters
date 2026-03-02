@@ -22,12 +22,6 @@ namespace SlideMasters_BlazorApp.Models
             DataUri = ConvertImageToDataUri(image);
         }
 
-        public void MovePiece(int deltaX, int deltaY)
-        {
-            BoardX += deltaX;
-            BoardY += deltaY;
-        }
-
         private string ConvertImageToDataUri(Image image)
         {
             using var ms = new MemoryStream();
