@@ -1,11 +1,13 @@
 ﻿@rendermode InteractiveServer
 @page "/Game"
+@using Microsoft.EntityFrameworkCore
 @using SixLabors.ImageSharp
 @using SixLabors.ImageSharp.Processing
 @using SlideMasters_BlazorApp.Models
 @using System.Timers
 @inject IWebHostEnvironment Environment
 @inject NavigationManager NavigationManager
+@inject IDbContextFactory<DBContextService> DbFactory
 
 <PageTitle>Home</PageTitle>
 
@@ -52,7 +54,9 @@
     [Parameter][SupplyParameterFromQuery] public string? ImagePath { get; set; }
     [Parameter][SupplyParameterFromQuery] public bool IsTimed { get; set; }
 
-    [Parameter][SupplyParameterFromQuery] public DifficultyLevel DifficultyLevel { get; set; }
+    [Parameter][SupplyParameterFromQuery(Name = "level")] public int difficultyLevel { get; set; }
+    public DifficultyLevel DifficultyLevel => (DifficultyLevel)difficultyLevel;
+
 
     //Public
     public GameController GameController { get; set; } = new GameController();
@@ -232,7 +236,7 @@
                     GameController.slidingPuzzleBlocks.RemoveAt(emptyBlockIndex);
 
                     //Shuffle the existing pieces
-                    ImageRandomizer.Shuffle<ImageBlock>(ref GameController.slidingPuzzleBlocks);
+                    //ImageRandomizer.Shuffle<ImageBlock>(ref GameController.slidingPuzzleBlocks);
 
                     //Get the empty block and create an Image block from it
                     //It is resized to match the existing puzzle block dimensions
@@ -319,6 +323,8 @@
         {
             //Increase time until player has completed puzzle
             timer?.Stop();
+            using var context = DbFactory.CreateDbContext();
+            context.AddNewScore(new GameScore("RealPlayer", 100, DifficultyLevel.Easy));
         }
     }
 }
