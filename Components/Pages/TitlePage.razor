@@ -17,21 +17,25 @@
         <li>Compete against your friend for the fastest time</li>
     </ul>
 </p>
-<div class="mb-4">
-    <h5>Option 1: Upload an Image</h5>
-    <InputFile OnChange="HandleFileSelected" class="form-control"></InputFile>
-</div>
+<div class="inputs">
+    <div class="mb-4">
+        <h5>Option 1: Upload an Image</h5>
+        <InputFile OnChange="HandleFileSelected" class="form-control"></InputFile>
+    </div>
 
-<div class="mb-4">
-    <h5>Option 2: Use Image URL</h5>
-    <div class="input-group">
-        <input type="text" @bind="imageUrl" class="form-control" placeholder="https://example.com/image.jpg" />
-        <button class="btn btn-secondary" @onclick="LoadFromUrl">Load URL</button>
+    <div class="mb-4">
+        <h5>Option 2: Use Image URL</h5>
+        <div class="input-group">
+            <input type="text" @bind="imageUrl" class="form-control" placeholder="https://example.com/image.jpg" />
+            <button class="btn btn-secondary" @onclick="LoadFromUrl">Load URL</button>
+        </div>
     </div>
 </div>
 
-<button class="btn btn-primary" @onclick="() => StartGame(false)">Start Casual Game</button>
-<button class="btn btn-primary" @onclick="() => StartGame(true)">Start Timed Game</button>
+<div class="game-btns">
+    <button class="btn btn-primary btn-game" @onclick="() => StartGame(false)">Start Casual Game</button>
+    <button class="btn btn-primary btn-game" @onclick="() => StartGame(true)">Start Timed Game</button>
+</div>
 
 
 
