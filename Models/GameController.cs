@@ -43,7 +43,7 @@
 
         public void SwapBlocks(int firstIndex, int secondIndex)
         {
-            //store original board positions
+            //Store original board positions
             var firstX = slidingPuzzleBlocks[firstIndex].BoardX;
             var firstY = slidingPuzzleBlocks[firstIndex].BoardY;
             
@@ -52,7 +52,6 @@
 
             //Swap blocks
             var temp = slidingPuzzleBlocks[firstIndex];
-
             slidingPuzzleBlocks[firstIndex] = slidingPuzzleBlocks[secondIndex];
             slidingPuzzleBlocks[secondIndex] = temp;
 

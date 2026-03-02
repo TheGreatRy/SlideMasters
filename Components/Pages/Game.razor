@@ -11,13 +11,16 @@
 
 <h1>Image Viewer</h1>
 
-@if (hasLoaded)
+@if (hasLoaded && IsTimed)
 {
     <h4>@secondsRemaining</h4>
 }
 
 @if (ImageSource != null)
 {
+    //Check win condition
+    hasWon = GameController.IsCompleted();
+
     <div>
         <h3>Image Information</h3>
         <p><strong>Path:</strong> @ImageSource</p>
@@ -25,8 +28,13 @@
         {
             <p><strong>Resolution:</strong> @ImageWidth x @ImageHeight pixels</p>
         }
+        @if (hasWon)
+        {
+            <p><strong>CONGRATS, YOU HAVE COMPLETED THE PUZZLE!!! :D</strong></p>
+        }
 
         <div style="display: grid; grid-template-columns: repeat(4, 100px); gap: 5px; margin: 5px;">
+            
             @if (GameController.slidingPuzzleBlocks.Count > 0)
             {
                 //Draw puzzle grid
@@ -34,8 +42,6 @@
                 {
                     @UpdateBlocks(i);
                 }
-                //Check win condition
-                hasWon = GameController.IsCompleted();
             }
         </div>
     </div>
@@ -66,6 +72,21 @@
     private int secondsRemaining { get; set; }
     private Timer? timer { get; set; }
 
+    protected override void OnInitialized()
+    {
+        if (string.IsNullOrEmpty(ImagePath))
+        {
+            ImagePath = "/Images/Static/redToji.jpg"; // Default fallback
+        }
+
+        LoadImageData(ImagePath);
+
+        if (IsTimed)
+        {
+            StartTimer();
+        }
+    }
+
     //Render the blocks as the values change (must be rendered in code)
     private RenderFragment<int> UpdateBlocks => value => __builder =>
     {
@@ -79,7 +100,7 @@
             <img src="@block.DataUri" @onclick="(() => OnClickBlock(value))" alt="Image Block" style="width: 100px; height: 100px; border: 1px solid black;" />
         }
     };
-
+    
     //Updates and swaps blocks if the clicked block is adjacent to the empty block
     private void OnClickBlock(int index)
     {
@@ -104,7 +125,7 @@
                     //block above clicked block
                     int secondIndex = GetImageBlockIndex(clickedBlock.BoardX, clickedBlock.BoardY - 1);
 
-                    //if it's empty, swap
+                    //if it's empty && not out of bounds, swap
                     if (GameController.slidingPuzzleBlocks[secondIndex].IsEmptyBlock && secondIndex != -1)
                     {
                         GameController.SwapBlocks(firstIndex, secondIndex);
@@ -116,7 +137,7 @@
                     //block under clicked block
                     int secondIndex = GetImageBlockIndex(clickedBlock.BoardX, clickedBlock.BoardY + 1);
 
-                    //if it's empty, swap
+                    //if it's empty && not out of bounds, swap
                     if (GameController.slidingPuzzleBlocks[secondIndex].IsEmptyBlock && secondIndex != -1)
                     {
                         GameController.SwapBlocks(firstIndex, secondIndex);
@@ -128,7 +149,7 @@
                     //block to the left of clicked block
                     int secondIndex = GetImageBlockIndex(clickedBlock.BoardX - 1, clickedBlock.BoardY);
 
-                    //if it's empty, swap
+                    //if it's empty && not out of bounds, swap
                     if (GameController.slidingPuzzleBlocks[secondIndex].IsEmptyBlock && secondIndex != -1)
                     {
                         GameController.SwapBlocks(firstIndex, secondIndex);
@@ -140,7 +161,7 @@
                     //block to the right of clicked block
                     int secondIndex = GetImageBlockIndex(clickedBlock.BoardX + 1, clickedBlock.BoardY);
 
-                    //if it's empty, swap
+                    //if it's empty && not out of bounds, swap
                     if (GameController.slidingPuzzleBlocks[secondIndex].IsEmptyBlock && secondIndex != -1)
                     {
                         GameController.SwapBlocks(firstIndex, secondIndex);
@@ -155,21 +176,6 @@
             }
         }
 
-    }
-
-    protected override void OnInitialized()
-    {
-        if (string.IsNullOrEmpty(ImagePath))
-        {
-            ImagePath = "/Images/Static/redToji.jpg"; // Default fallback
-        }
-
-        LoadImageData(ImagePath);
-
-        if (IsTimed)
-        {
-            StartTimer();
-        }
     }
 
     private void LoadImageData(string imagePath)
@@ -270,7 +276,7 @@
 
     private void StartTimer()
     {
-        secondsRemaining = 60;
+        secondsRemaining = 0;
         timer = new Timer(1000);
         timer.Elapsed += OnTimedEvent;
         timer.AutoReset = true;
@@ -279,16 +285,16 @@
 
     private void OnTimedEvent(object sender, ElapsedEventArgs e)
     {
-        if (secondsRemaining > 0)
+        if (!hasWon)
         {
-            secondsRemaining--;
+            //Increment timer while solving
+            secondsRemaining++;
             InvokeAsync(StateHasChanged);
         }
         else
         {
-            //Loop timer indefinitely until full split of home page and "game" page
+            //Increase time until player has completed puzzle
             timer?.Stop();
-            StartTimer();
         }
     }
 }
