@@ -6,7 +6,6 @@
 @using SlideMasters_BlazorApp.Models
 @using System.Timers
 @using SixLabors.ImageSharp.PixelFormats
-@inject IWebHostEnvironment Enviroment
 @inject IWebHostEnvironment Environment
 @inject NavigationManager NavigationManager
 @inject HttpClient HttpClient
@@ -97,14 +96,18 @@
     private int secondsRemaining { get; set; }
     private Timer? timer { get; set; }
 
-    protected override void OnInitialized()
+    protected override async Task OnAfterRenderAsync(bool firstRender)
     {
+        // OnAfterRender only runs on the client after the interactive SignalR circuit
+        // is established — never during static pre-render, so WebRootPath is always valid here.
+        if (!firstRender) return;
+
         if (string.IsNullOrEmpty(ImagePath))
         {
             ImagePath = "/Images/Static/redToji.jpg"; // Default fallback
         }
 
-        LoadImageData(ImagePath);
+        await LoadImageData(ImagePath);
 
         if (IsTimed)
         {
@@ -203,24 +206,7 @@
 
     }
 
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        // OnAfterRender only runs on the client after the interactive SignalR circuit
-        // is established — never during static pre-render, so WebRootPath is always valid here.
-        if (!firstRender) return;
-
-        if (string.IsNullOrEmpty(ImagePath))
-        {
-            ImagePath = "/Images/Static/redToji.jpg"; // Default fallback
-        }
-
-        await LoadImageData(ImagePath);
-
-        if (IsTimed)
-        {
-            StartTimer();
-        }
-    }
+    
 
     private async Task LoadImageData(string imagePath)
     {
@@ -254,7 +240,7 @@
             {
                 // Normalize forward slashes to the OS path separator before combining
                 var relativePath = imagePath.TrimStart('/').Replace('/', Path.DirectorySeparatorChar);
-                var webRoot = Enviroment.WebRootPath;
+                var webRoot = Environment.WebRootPath;
                 if (string.IsNullOrEmpty(webRoot))
                 {
                     // WebRootPath can be null/empty during SSR pre-render — abort early
