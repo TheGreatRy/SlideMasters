@@ -1,6 +1,5 @@
 ﻿namespace SlideMasters_BlazorApp.Models
 {
-
     public enum GameState
     {
         Title,
@@ -25,28 +24,43 @@
         }
 
         /// <summary>
-        /// Checks if a move is valid based on the current position of the empty space and the block to be moved.
-        /// </summary>
-        public void CanMove()
-        {
-
-        }
-
-        /// <summary>
         /// Checks if the puzzle is completed.
         /// </summary>
         /// <returns>True if the puzzle is in order, False otherwise</returns>
         public bool IsCompleted()
         {
-            for(int i = 0; i < slidingPuzzleBlocks.Count; i++)
-            {
-                var block = slidingPuzzleBlocks[i];
-                if (block.BoardX != i % 4 || block.BoardY != i / 4)
+            for(int j = 0; j < slidingPuzzleBlocks.Count; j++)
+                {
+                var block = slidingPuzzleBlocks[j];
+
+                if (block.BoardID != j)
                 {
                     return false;
                 }
             }
             return true;
+        }
+
+        public void SwapBlocks(int firstIndex, int secondIndex)
+        {
+            //Store original board positions
+            var firstX = slidingPuzzleBlocks[firstIndex].BoardX;
+            var firstY = slidingPuzzleBlocks[firstIndex].BoardY;
+            
+            var secondX = slidingPuzzleBlocks[secondIndex].BoardX;
+            var secondY = slidingPuzzleBlocks[secondIndex].BoardY;
+
+            //Swap blocks
+            var temp = slidingPuzzleBlocks[firstIndex];
+            slidingPuzzleBlocks[firstIndex] = slidingPuzzleBlocks[secondIndex];
+            slidingPuzzleBlocks[secondIndex] = temp;
+
+            //Since the swap includes the board x and y, use stored values to correct position
+            slidingPuzzleBlocks[firstIndex].BoardX = firstX;
+            slidingPuzzleBlocks[firstIndex].BoardY = firstY;
+
+            slidingPuzzleBlocks[secondIndex].BoardX = secondX;
+            slidingPuzzleBlocks[secondIndex].BoardY = secondY;
         }
     }
 }
