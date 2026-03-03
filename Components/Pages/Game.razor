@@ -1,27 +1,30 @@
 ﻿@rendermode InteractiveServer
 @page "/Game"
+@using Microsoft.EntityFrameworkCore
 @using SixLabors.ImageSharp
 @using SixLabors.ImageSharp.Processing
 @using SlideMasters_BlazorApp.Models
 @using System.Timers
-@inject IWebHostEnvironment Enviroment
+@using SixLabors.ImageSharp.PixelFormats
+@inject IWebHostEnvironment Environment
 @inject NavigationManager NavigationManager
+@inject HttpClient HttpClient
+@inject IDbContextFactory<DBContextService> DbFactory
 
 <PageTitle>Home</PageTitle>
 
 <h1>Image Viewer</h1>
 
-<div class="mb-3">
-    <button class="btn btn-primary" @onclick='() => LoadImageData("redToji")'>Load Toji Image</button>
-</div>
-
-@if (hasLoaded)
+@if (hasLoaded && IsTimed)
 {
     <h4>@secondsRemaining</h4>
 }
 
 @if (ImageSource != null)
 {
+    //Check win condition
+    hasWon = GameController.IsCompleted();
+
     <div>
         <h3>Image Information</h3>
         <p><strong>Path:</strong> @ImageSource</p>
@@ -29,15 +32,24 @@
         {
             <p><strong>Resolution:</strong> @ImageWidth x @ImageHeight pixels</p>
         }
+        
+        @if (hasWon)
+        {
+            <div class="alert alert-success mt-3" role="alert">
+                <h4 class="alert-heading">Congratulations!</h4>
+                <p>You've successfully solved the puzzle!</p>
+                <hr>
+                <button class="btn btn-outline-success" @onclick="GoBack">Play Again</button>
+            </div>
+        }
 
-        <div style="display: grid; grid-template-columns: repeat(4, 100px); gap: 5px; margin: 5px;">
+        <div style="display: grid; grid-template-columns: repeat(@gridWidth, 100px); gap: 5px; margin: 5px;">
             @if (GameController.slidingPuzzleBlocks.Count > 0)
             {
                 //Draw puzzle grid
-                @for (int i = 0; i < GameController.slidingPuzzleBlocks.Count; i++)
+                for (int i = 0; i < GameController.slidingPuzzleBlocks.Count; i++)
                 {
-                    var block = GameController.slidingPuzzleBlocks[i];
-                    <img src="@block.DataUri" @onclick="() => OnClickBlock(i)" alt="Image Block" style="width: 100px; height: 100px; border: 1px solid black;" />
+                    @UpdateBlocks(i);
                 }
             }
         </div>
@@ -45,20 +57,33 @@
 }
 
 
+
+
+<div class="mb-3">
+    <button class="btn btn-secondary" @onclick="GoBack">Back to Main Menu</button>
+</div>
+
+
 @code
 {
+    [Parameter][SupplyParameterFromQuery] public string? ImagePath { get; set; }
+    [Parameter][SupplyParameterFromQuery] public bool IsTimed { get; set; }
 
-    [Parameter] [SupplyParameterFromQuery] public string? ImagePath { get; set; }
+    [Parameter][SupplyParameterFromQuery(Name = "level")] public int difficultyLevel { get; set; }
+    public DifficultyLevel DifficultyLevel => (DifficultyLevel)difficultyLevel;
 
-    [Parameter] [SupplyParameterFromQuery] public bool IsTimed { get; set; }
 
-    //main puzzle pieces
+    //Public
     public GameController GameController { get; set; } = new GameController();
     public int emptyBlockIndex = 0;
     public bool hasLoaded = false;
     public bool hasWon = false;
 
-    //Validate input image
+    private int startingTime = 60;
+    
+
+
+    //Private
     private string? ImageSource { get; set; }
     private int ImageWidth { get; set; }
     private int ImageHeight { get; set; }
@@ -70,122 +95,220 @@
 
     private int secondsRemaining { get; set; }
     private Timer? timer { get; set; }
-    
-    private void CheckWinCondition()
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        bool win = true;
-        for (int j = 0; j < GameController.slidingPuzzleBlocks.Count; j++)
-        {
-            if (GameController.slidingPuzzleBlocks[j].BoardID != j)
-            {
-                win = false;
-                break;
-            }
-        }
-        hasWon = win;
-        
-        if (hasWon)
-        {
-            timer?.Stop();
-        }
-    }
-    
+        // OnAfterRender only runs on the client after the interactive SignalR circuit
+        // is established — never during static pre-render, so WebRootPath is always valid here.
+        if (!firstRender) return;
 
-    private void OnClickBlock(int index)
-    {
-        if (index < GameController.slidingPuzzleBlocks.Count)
-        {
-            ImageBlock clickedBlock = GameController.slidingPuzzleBlocks[index];
-
-            // Implement logic to move the clicked block if it's adjacent to the empty space
-            if (!clickedBlock.IsEmptyBlock)
-            {
-
-                //get orthogonal positions
-                bool upCoords = FindImageBlock(clickedBlock.BoardX, clickedBlock.BoardY - 1);
-                bool downCoords = FindImageBlock(clickedBlock.BoardX, clickedBlock.BoardY + 1);
-                bool leftCoords = FindImageBlock(clickedBlock.BoardX - 1, clickedBlock.BoardY);
-                bool rightCoords = FindImageBlock(clickedBlock.BoardX + 1, clickedBlock.BoardY);
-
-            }
-        }
-
-    }
-
-    protected override void OnInitialized()
-    {
         if (string.IsNullOrEmpty(ImagePath))
         {
             ImagePath = "/Images/Static/redToji.jpg"; // Default fallback
         }
-        
-        LoadImageData(ImagePath);
-        
+
+        await LoadImageData(ImagePath);
+
         if (IsTimed)
         {
             StartTimer();
         }
     }
 
-    private void LoadImageData(string imagePath)
+    //Render the blocks as the values change (must be rendered in code)
+    private RenderFragment<int> UpdateBlocks => value => __builder =>
+    {
+        var block = GameController.slidingPuzzleBlocks[value];
+        if (block.IsEmptyBlock)
+        {
+            <img src="@block.DataUri" @onclick="(() => OnClickBlock(value))" alt="Image Block" style="width: 100px; height: 100px;" />
+        }
+        else
+        {
+            <img src="@block.DataUri" @onclick="(() => OnClickBlock(value))" alt="Image Block" style="width: 100px; height: 100px; border: 1px solid black;" />
+        }
+    };
+
+    //Updates and swaps blocks if the clicked block is adjacent to the empty block
+    private void OnClickBlock(int index)
+    {
+        //the code kept rendering past the count, so this restricts movement to valid blocks
+        if (index < GameController.slidingPuzzleBlocks.Count)
+        {
+            ImageBlock clickedBlock = GameController.slidingPuzzleBlocks[index];
+
+            //Clicking the empty block should do nothing, so we check the other blocks
+            if (!clickedBlock.IsEmptyBlock)
+            {
+                //get orthogonal positions
+                bool upCoords = FindImageBlock(clickedBlock.BoardX, clickedBlock.BoardY - 1);
+                bool downCoords = FindImageBlock(clickedBlock.BoardX, clickedBlock.BoardY + 1);
+                bool leftCoords = FindImageBlock(clickedBlock.BoardX - 1, clickedBlock.BoardY);
+                bool rightCoords = FindImageBlock(clickedBlock.BoardX + 1, clickedBlock.BoardY);
+
+                int firstIndex = GetImageBlockIndex(clickedBlock.BoardX, clickedBlock.BoardY);
+
+                if (upCoords)
+                {
+                    //block above clicked block
+                    int secondIndex = GetImageBlockIndex(clickedBlock.BoardX, clickedBlock.BoardY - 1);
+
+                    //if it's empty && not out of bounds, swap
+                    if (GameController.slidingPuzzleBlocks[secondIndex].IsEmptyBlock && secondIndex != -1)
+                    {
+                        GameController.SwapBlocks(firstIndex, secondIndex);
+                        return;
+                    }
+                }
+                if (downCoords)
+                {
+                    //block under clicked block
+                    int secondIndex = GetImageBlockIndex(clickedBlock.BoardX, clickedBlock.BoardY + 1);
+
+                    //if it's empty && not out of bounds, swap
+                    if (GameController.slidingPuzzleBlocks[secondIndex].IsEmptyBlock && secondIndex != -1)
+                    {
+                        GameController.SwapBlocks(firstIndex, secondIndex);
+                        return;
+                    }
+                }
+                if (leftCoords)
+                {
+                    //block to the left of clicked block
+                    int secondIndex = GetImageBlockIndex(clickedBlock.BoardX - 1, clickedBlock.BoardY);
+
+                    //if it's empty && not out of bounds, swap
+                    if (GameController.slidingPuzzleBlocks[secondIndex].IsEmptyBlock && secondIndex != -1)
+                    {
+                        GameController.SwapBlocks(firstIndex, secondIndex);
+                        return;
+                    }
+                }
+                if (rightCoords)
+                {
+                    //block to the right of clicked block
+                    int secondIndex = GetImageBlockIndex(clickedBlock.BoardX + 1, clickedBlock.BoardY);
+
+                    //if it's empty && not out of bounds, swap
+                    if (GameController.slidingPuzzleBlocks[secondIndex].IsEmptyBlock && secondIndex != -1)
+                    {
+                        GameController.SwapBlocks(firstIndex, secondIndex);
+                        return;
+                    }
+                }
+                //block not found, do not search for empty block
+                else
+                {
+                    return;
+                }
+            }
+        }
+
+    }
+
+    
+
+    private async Task LoadImageData(string imagePath)
     {
         ImageSource = imagePath;
-        string physicalPath;
+        string? tempFilePath = null;
 
         try
         {
-            if (imagePath.StartsWith("http"))
-            {
-                Console.WriteLine("URL detected. Need to add full functionallity");
-                return;
-            }
-            
-            {
-                physicalPath = Path.Combine(Enviroment.WebRootPath, imagePath.TrimStart('/'));
-            }
+            string physicalPath;
 
-            if (File.Exists(physicalPath))
+            if (imagePath.StartsWith("http", StringComparison.OrdinalIgnoreCase))
             {
-                var imageInfo = Image.Identify(physicalPath);
-                if (imageInfo != null)
+                // Download the URL image to a temp file so ImageSplitter (which needs a path) can use it
+                var imageBytes = await HttpClient.GetByteArrayAsync(imagePath);
+
+                // Detect extension from URL, fall back to .jpg
+                string ext = ".jpg";
+                try
                 {
-                    ImageHeight = imageInfo.Height;
-                    ImageWidth = imageInfo.Width;
+                    var uriPath = new Uri(imagePath).AbsolutePath;
+                    var uriExt = Path.GetExtension(uriPath);
+                    if (!string.IsNullOrEmpty(uriExt) && uriExt.Length <= 5) ext = uriExt;
                 }
+                catch { /* ignore, use default */ }
 
-                var getBlocks = imageSplitter.SplitImage(physicalPath, (gridHeight * gridWidth));
-                GameController.slidingPuzzleBlocks.Clear();
-
-                for (int i = 0; i < getBlocks.Count(); i++)
+                tempFilePath = Path.Combine(Path.GetTempPath(), $"{Guid.NewGuid()}{ext}");
+                await File.WriteAllBytesAsync(tempFilePath, imageBytes);
+                physicalPath = tempFilePath;
+            }
+            else
+            {
+                // Normalize forward slashes to the OS path separator before combining
+                var relativePath = imagePath.TrimStart('/').Replace('/', Path.DirectorySeparatorChar);
+                var webRoot = Environment.WebRootPath;
+                if (string.IsNullOrEmpty(webRoot))
                 {
-                    var block = new ImageBlock(getBlocks[i]) { BoardX = i % gridWidth, BoardY = (int)(i / gridWidth), BoardID = i };
+                    // WebRootPath can be null/empty during SSR pre-render — abort early
+                    Console.WriteLine("WebRootPath is empty, skipping load (pre-render phase)");
+                    return;
+                }
+                physicalPath = Path.Combine(webRoot, relativePath);
+                Console.WriteLine($"Resolved physical path: {physicalPath}");
+            }
+
+            using var image = Image.Load<Rgba32>(physicalPath);
+
+            ImageHeight = image.Height;
+            ImageWidth = image.Width;
+
+            try
+            {
+                // Split the image into puzzle blocks.
+                // For a 4x4 board: 16 total blocks (perfect square), each block is image/4 wide and image/4 tall.
+                var getBlocks = imageSplitter.SplitImage(physicalPath, gridHeight * gridWidth);
+
+                for (int i = 0; i < getBlocks.Length; i++)
+                {
+                    var block = new ImageBlock(getBlocks[i]) { BoardID = i };
                     GameController.slidingPuzzleBlocks.Add(block);
                 }
 
-                //Remove the last block to allow an empty image to be added
+                // Remove the last block to make room for the empty sliding tile
                 emptyBlockIndex = GameController.slidingPuzzleBlocks.Count - 1;
                 GameController.slidingPuzzleBlocks.RemoveAt(emptyBlockIndex);
 
-                //Shuffle the existing pieces
+                // Shuffle the pieces
                 ImageRandomizer.Shuffle<ImageBlock>(ref GameController.slidingPuzzleBlocks);
 
-                //Get the empty block and create an Image block from it
-                //It is resized to match the existing puzzle block dimensions
+                // Load and resize the empty block placeholder to match tile size
                 var emptyBlock = Image.Load(Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "Images", "Static", "empty_block.png"));
-                emptyBlock.Mutate(context => context.Resize(ImageWidth / gridWidth, ImageHeight / gridHeight));
-                var imgEmptyBlock = new ImageBlock(emptyBlock) { BoardX = (emptyBlockIndex) % gridWidth, BoardY = (int)((emptyBlockIndex) / gridWidth), IsEmptyBlock = true, BoardID = emptyBlockIndex };
+                emptyBlock.Mutate(ctx => ctx.Resize(ImageWidth / gridWidth, ImageHeight / gridHeight));
+                var imgEmptyBlock = new ImageBlock(emptyBlock) { IsEmptyBlock = true, BoardID = emptyBlockIndex };
 
-                //Add the empty block to the end
+                // Add the empty block at the end
                 GameController.slidingPuzzleBlocks.Add(imgEmptyBlock);
 
-                //Puzzle construction is successful, dont allow players to load the image again
+                // Assign board coordinates to every block
+                for (int i = 0; i < GameController.slidingPuzzleBlocks.Count; i++)
+                {
+                    GameController.slidingPuzzleBlocks[i].BoardX = i % gridWidth;
+                    GameController.slidingPuzzleBlocks[i].BoardY = i / gridWidth;
+                }
+
                 hasLoaded = true;
-                StartTimer();
+                await InvokeAsync(StateHasChanged);
+            }
+            catch (Exception spl)
+            {
+                Console.WriteLine($"Error while splitting image: {spl.Message}");
             }
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error reading image resolution: {ex.Message}");
+            Console.WriteLine($"Error loading image: {ex.Message}");
+        }
+        finally
+        {
+            // Clean up the temp file if one was created for a URL image
+            if (tempFilePath != null && File.Exists(tempFilePath))
+            {
+                try { File.Delete(tempFilePath); } catch { /* best effort */ }
+            }
         }
     }
 
@@ -194,30 +317,62 @@
     {
         ImageBlock? imgBlock = GameController.slidingPuzzleBlocks.Find(img => img.BoardX == boardX && img.BoardY == boardY);
 
-        return imgBlock.Equals(null);
+        return (imgBlock == null) ? false : true;
+    }
+
+    private int GetImageBlockIndex(int boardX, int boardY)
+    {
+        ImageBlock? imgBlock = GameController.slidingPuzzleBlocks.Find(img => img.BoardX == boardX && img.BoardY == boardY);
+        return (imgBlock == null) ? -1 : GameController.slidingPuzzleBlocks.IndexOf(imgBlock);
+    }
+    
+    private void GoBack()
+    {
+        NavigationManager.NavigateTo("/");
     }
 
     private void StartTimer()
     {
-        secondsRemaining = 60;
+        secondsRemaining = 0;
         timer = new Timer(1000);
         timer.Elapsed += OnTimedEvent;
         timer.AutoReset = true;
         timer.Enabled = true;
     }
 
+    private void DetermineGridSize()
+    {
+        switch (DifficultyLevel)
+        {
+            case DifficultyLevel.Easy:
+                gridWidth = 3;
+                gridHeight = 3;
+                break;
+            case DifficultyLevel.Medium:
+                gridWidth = 4;
+                gridHeight = 4;
+                break;
+            case DifficultyLevel.Hard:
+                gridWidth = 5;
+                gridHeight = 5;
+                break;
+        }
+    }
+
     private void OnTimedEvent(object sender, ElapsedEventArgs e)
     {
-        if (secondsRemaining > 0)
+        if (!hasWon)
         {
-            secondsRemaining--;
+            //Increment timer while solving
+            secondsRemaining++;
             InvokeAsync(StateHasChanged);
         }
         else
         {
-            //Loop timer indefinitely until full split of home page and "game" page
+            //Increase time until player has completed puzzle
             timer?.Stop();
-            StartTimer();
+            using var context = DbFactory.CreateDbContext();
+            context.AddNewScore(new GameScore("RealPlayer", 100, DifficultyLevel.Easy));
         }
     }
 }

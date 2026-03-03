@@ -1,6 +1,7 @@
 ﻿@inject NavigationManager navigationManager
-@inject IWebHostEnvironment Enviroment
+@inject IWebHostEnvironment Environment
 @page "/"
+@using SlideMasters_BlazorApp.Models
 @rendermode InteractiveServer
 
 <h3>Slide Masters</h3>
@@ -25,27 +26,71 @@
 <div class="mb-4">
     <h5>Option 2: Use Image URL</h5>
     <div class="input-group">
-        <input type="text" @bind="imageUrl" class="form-control" placeholder="https://example.com/image.jpg" />
-        <button class="btn btn-secondary" @onclick="LoadFromUrl">Load URL</button>
+        <input type="text" @bind="imageUrl" @bind:event="oninput" class="form-control @(urlError != null ? "is-invalid" : "")" placeholder="https://example.com/image.jpg" />
+        <button class="btn btn-secondary" @onclick="LoadFromUrl" disabled="@isLoadingUrl">
+            @if (isLoadingUrl)
+            {
+                <span class="spinner-border spinner-border-sm me-1" role="status"></span>
+            }
+            Load URL
+        </button>
     </div>
+    @if (urlError != null)
+    {
+        <div class="text-danger mt-1 small">@urlError</div>
+    }
+    @if (urlPreview != null)
+    {
+        <div class="mt-2">
+            <p class="text-success small mb-1">✓ Image loaded successfully</p>
+            <img src="@urlPreview" alt="Preview" style="max-width: 200px; max-height: 150px; border: 1px solid #ccc; border-radius: 4px;" />
+        </div>
+    }
 </div>
 
 <button class="btn btn-primary" @onclick="() => StartGame(false)">Start Casual Game</button>
-<button class="btn btn-primary" @onclick="() => StartGame(true)">Start Timed Game</button>
+<button class="btn btn-primary" @onclick="() => StartGame(true)">Start Ranked Game</button>
 
-
-
+<button class="btn btn-secondary" @onclick="() => ChooseDifficulty(DifficultyLevel.Easy)">Easy</button>
+<button class="btn btn-secondary" @onclick="() => ChooseDifficulty(DifficultyLevel.Medium)">Medium</button>
+<button class="btn btn-secondary" @onclick="() => ChooseDifficulty(DifficultyLevel.Hard)">Hard</button>
 
 @code {
     private string? selectedImagePath;
     private string? imageUrl;
+    private string? urlError;
+    private string? urlPreview;
+    private bool isLoadingUrl = false;
+ 
+    private DifficultyLevel DifficultyLevel { get; set; } = DifficultyLevel.Easy;
+
+    public void ChooseDifficulty(DifficultyLevel difficultyLevel)
+    {
+        DifficultyLevel = difficultyLevel;
+        switch (difficultyLevel)
+        {
+            case DifficultyLevel.Easy:
+                // Set up easy difficulty settings
+                break;
+            case DifficultyLevel.Medium:
+                // Set up medium difficulty settings
+                break;
+            case DifficultyLevel.Hard:
+                // Set up hard difficulty settings
+                break;
+        }
+    }
 
     private async Task HandleFileSelected(InputFileChangeEventArgs e)
     {
         var file = e.File;
         if (file != null)
         {
-            var folderPath = Path.Combine(Enviroment.WebRootPath, "Images", "User");
+            // Reset URL state when a file is chosen
+            urlPreview = null;
+            urlError = null;
+
+            var folderPath = Path.Combine(Environment.WebRootPath, "Images", "User");
             if (!Directory.Exists(folderPath)) Directory.CreateDirectory(folderPath);
 
             var fileName = $"{Guid.NewGuid()}{Path.GetExtension(file.Name)}";
@@ -59,21 +104,78 @@
         }
     }
 
-    private void LoadFromUrl()
+    private async Task LoadFromUrl()
     {
-        if (!string.IsNullOrEmpty(imageUrl))
+        urlError = null;
+        urlPreview = null;
+        selectedImagePath = null;
+
+        if (string.IsNullOrWhiteSpace(imageUrl))
         {
+            urlError = "Please enter a URL.";
+            return;
+        }
+
+        // Basic URL validation
+        if (!Uri.TryCreate(imageUrl, UriKind.Absolute, out var uri) ||
+            (uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != Uri.UriSchemeHttps))
+        {
+            urlError = "Please enter a valid HTTP or HTTPS URL.";
+            return;
+        }
+
+        isLoadingUrl = true;
+        StateHasChanged();
+
+        try
+        {
+            using var httpClient = new HttpClient();
+            httpClient.Timeout = TimeSpan.FromSeconds(10);
+
+            // Send a HEAD request first to check content type without downloading the full image
+            using var request = new HttpRequestMessage(HttpMethod.Head, uri);
+            using var response = await httpClient.SendAsync(request);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                urlError = $"Could not reach the URL (HTTP {(int)response.StatusCode}).";
+                return;
+            }
+
+            var contentType = response.Content.Headers.ContentType?.MediaType ?? "";
+            if (!contentType.StartsWith("image/"))
+            {
+                urlError = "The URL does not point to a valid image (e.g. jpg, png, gif).";
+                return;
+            }
+
+            // URL is valid — accept it
             selectedImagePath = imageUrl;
+            urlPreview = imageUrl;
+        }
+        catch (TaskCanceledException)
+        {
+            urlError = "Request timed out. Please check the URL and try again.";
+        }
+        catch (Exception ex)
+        {
+            urlError = $"Failed to load image: {ex.Message}";
+        }
+        finally
+        {
+            isLoadingUrl = false;
+            StateHasChanged();
         }
     }
+
     public void StartGame(bool timed)
     {
         var url = navigationManager.GetUriWithQueryParameters("/game", new Dictionary<string, object?>
         {
             { "imagePath", selectedImagePath ?? "/Images/Static/redToji.jpg" },
-            { "isTimed", timed }
+            { "isTimed", timed },
+            { "difficultyLevel", (int)DifficultyLevel }
         });
         navigationManager.NavigateTo(url);
-        
     }
 }
