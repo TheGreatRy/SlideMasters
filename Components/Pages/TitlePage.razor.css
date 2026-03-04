@@ -59,7 +59,21 @@ button {
     font-size: 35px;
 }
 
+.btn-diff {
+    height: 50px;
+    font-size: 35px;
+}
+
 .game-btns {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 100px;
+    flex-wrap: nowrap;
+    margin-top: 50px;
+}
+
+.diff-btns {
     display: flex;
     justify-content: center;
     align-items: center;

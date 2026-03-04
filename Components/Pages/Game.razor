@@ -23,7 +23,7 @@
     //Check win condition
     hasWon = GameController.IsCompleted();
 
-    <div>
+    <div class="image-info">
         <h3>Image Information</h3>
         <p><strong>Path:</strong> @ImageSource</p>
         @if (ImageWidth > 0 && ImageHeight > 0)
@@ -35,15 +35,18 @@
             <p><strong>CONGRATS, YOU HAVE COMPLETED THE PUZZLE!!! :D</strong></p>
         }
 
-        <div style="display: grid; grid-template-columns: repeat(@gridWidth, 100px); gap: 5px; margin: 5px;">
-            @if (GameController.slidingPuzzleBlocks.Count > 0)
-            {
-                //Draw puzzle grid
-                for (int i = 0; i < GameController.slidingPuzzleBlocks.Count; i++)
+        <div class="puzzle">
+            <div style="display: grid; grid-template-columns: repeat(@gridWidth, 100px); gap: 5px; margin: 5px;">
+                @if (GameController.slidingPuzzleBlocks.Count > 0)
                 {
-                    @UpdateBlocks(i);
+                    //Draw puzzle grid
+                    for (int i = 0; i < GameController.slidingPuzzleBlocks.Count; i++)
+                    {
+                        @UpdateBlocks(i)
+                        ;
+                    }
                 }
-            }
+            </div>
         </div>
     </div>
 }
