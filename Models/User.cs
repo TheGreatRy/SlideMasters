@@ -16,7 +16,7 @@ namespace SlideMasters_BlazorApp.Models
         }
 
         /// <summary>
-        /// Replaces the highest score if the new score is higher than the existing one for the same difficulty level. <br/>
+        /// Replaces the best score if the new score is better (lower time) than the existing one for the same difficulty level. <br/>
         /// If no score exists for that difficulty, it adds the new score.
         /// </summary>
         /// <param name="newScore">The new score to be considered for replacement.</param>
@@ -28,7 +28,7 @@ namespace SlideMasters_BlazorApp.Models
             {
                 GameScores.Add(newScore);
             }
-            else if (newScore.Score > existingScore.Score)
+            else if (newScore.Score < existingScore.Score) // Lower time is better
             {
                 GameScores.Remove(existingScore);
                 GameScores.Add(newScore);

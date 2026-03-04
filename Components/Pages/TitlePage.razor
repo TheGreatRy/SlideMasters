@@ -50,16 +50,15 @@
     }
 </div>
 
-<div class="game-btns">
-    <button class="btn btn-primary btn-game" @onclick="() => StartGame(false)">Start Casual Game</button>
-    <button class="btn btn-primary btn-game" @onclick="() => StartGame(true)">Start Timed Game</button>
+<div class="diff-btns">
+    <button class="btn btn-secondary btn-diff @(DifficultyLevel == DifficultyLevel.Easy ? "btn-selected" : "")" @onclick="() => ChooseDifficulty(DifficultyLevel.Easy)">Easy</button>
+    <button class="btn btn-secondary btn-diff @(DifficultyLevel == DifficultyLevel.Medium ? "btn-selected" : "")" @onclick="() => ChooseDifficulty(DifficultyLevel.Medium)">Medium</button>
+    <button class="btn btn-secondary btn-diff @(DifficultyLevel == DifficultyLevel.Hard ? "btn-selected" : "")" @onclick="() => ChooseDifficulty(DifficultyLevel.Hard)">Hard</button>
 </div>
 
-
-<div class="diff-btns">
-    <button class="btn btn-secondary btn-diff" @onclick="() => ChooseDifficulty(DifficultyLevel.Easy)">Easy</button>
-    <button class="btn btn-secondary btn-diff" @onclick="() => ChooseDifficulty(DifficultyLevel.Medium)">Medium</button>
-    <button class="btn btn-secondary btn-diff" @onclick="() => ChooseDifficulty(DifficultyLevel.Hard)">Hard</button>
+<div class="game-btns">
+    <button class="btn btn-secondary btn-diff" @onclick="() => StartGame(false)">Start Casual Game</button>
+    <button class="btn btn-secondary btn-diff" @onclick="() => StartGame(true)">Start Timed Game</button>
 </div>
 
 @code {
