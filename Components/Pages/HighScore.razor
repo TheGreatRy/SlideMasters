@@ -24,7 +24,7 @@
 
 @code {
     List<GameScore> Scores { get; set; } = new List<GameScore>();
-    DifficultyLevel DifficultyLevel { get; set; } = DifficultyLevel.Easy;
+    DifficultyLevel SelectedDifficultyLevel { get; set; } = DifficultyLevel.Easy;
     protected override void OnInitialized()
     {
         Scores = contextService.GetAllScores();

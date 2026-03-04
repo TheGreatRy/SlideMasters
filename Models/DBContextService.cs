@@ -11,14 +11,14 @@ namespace SlideMasters_BlazorApp.Models
         {
         }
 
-        public GameScore GetEasyHighScore()
+        public List<GameScore> GetEasyHighScore()
         {
-            return GameScore.FirstOrDefault(s => s.Difficulty == DifficultyLevel.Easy)!;
+            return GameScore.Where(s => s.Difficulty == DifficultyLevel.Medium).ToList();
         }
 
         public GameScore GetMediumHighScore()
         {
-            return GameScore.FirstOrDefault(s => s.Difficulty == DifficultyLevel.Medium)!;
+            return GameScore.Where(s => s.Difficulty == DifficultyLevel.Hard).ToList();
         }
 
         public GameScore GetHardHighScore()
