@@ -6,73 +6,120 @@
 @using SlideMasters_BlazorApp.Models
 @using System.Timers
 @using SixLabors.ImageSharp.PixelFormats
+@using Microsoft.AspNetCore.Components.Web
 @inject IWebHostEnvironment Environment
 @inject NavigationManager NavigationManager
 @inject HttpClient HttpClient
 @inject IDbContextFactory<DBContextService> DbFactory
 
-<PageTitle>Home</PageTitle>
+<PageTitle>Slide Masters - Game</PageTitle>
 
-<h1>Image Viewer</h1>
+<div class="game-container">
+    <h1>Slide Masters</h1>
 
-@if (hasLoaded && IsTimed)
-{
-    <h4>@secondsRemaining</h4>
-}
+    @if (hasLoaded && IsTimed)
+    {
+        <h4>Time: @FormatTime(secondsRemaining)</h4>
+    }
 
-@if (ImageSource != null)
-{
-    //Check win condition
-    hasWon = GameController.IsCompleted();
+    @if (ImageSource != null)
+    {
+        <div class="image-info">
+            <h3>Puzzle - @DifficultyLevel Difficulty (@gridWidth x @gridHeight)</h3>
+            <p><strong>Image:</strong> @(ImageSource.Contains("http") ? "Custom URL" : Path.GetFileName(ImageSource))</p>
+            @if (ImageWidth > 0 && ImageHeight > 0)
+            {
+                <p><strong>Resolution:</strong> @ImageWidth x @ImageHeight pixels</p>
+            }
+            
+            @if (hasWon && !IsTimed)
+            {
+                <div class="alert alert-success mt-3" role="alert">
+                    <h4 class="alert-heading">Congratulations!</h4>
+                    <p>You've successfully solved the puzzle!</p>
+                    <hr>
+                    <button class="btn btn-outline-success" @onclick="GoBack">Play Again</button>
+                </div>
+            }
+            else if (hasWon && IsTimed && showNameInput)
+            {
+                <div class="alert alert-success mt-3" role="alert">
+                    <h4 class="alert-heading">Congratulations!</h4>
+                    <p>You completed the puzzle in @FormatTime(secondsRemaining)!</p>
+                    <hr>
+                    <div class="arcade-name-selector" 
+                         @onkeydown="HandleKeyDown" 
+                         @onkeydown:stopPropagation="true"
+                         tabindex="0">
+                        <label class="form-label">Enter your initials for the high score:</label>
+                        <div class="name-input-container">
+                            @for (int i = 0; i < 3; i++)
+                            {
+                                int letterIndex = i; // Capture for closure
+                                <div class="letter-selector @(selectedLetterIndex == letterIndex ? "selected" : "")">
+                                    <button type="button" class="btn btn-sm btn-outline-primary arrow-btn" @onclick="() => CycleLetter(letterIndex, 1)">
+                                        <span>▲</span>
+                                    </button>
+                                    <div class="letter-display" @onclick="() => SelectLetter(letterIndex)">@playerInitials[letterIndex]</div>
+                                    <button type="button" class="btn btn-sm btn-outline-primary arrow-btn" @onclick="() => CycleLetter(letterIndex, -1)">
+                                        <span>▼</span>
+                                    </button>
+                                </div>
+                            }
+                        </div>
+                        <div class="name-preview">@string.Join("", playerInitials)</div>
+                        <div class="arcade-instructions">
+                            <small>Click letters to select • Use ▲▼ buttons or arrow keys • Press Enter to save</small>
+                        </div>
+                    </div>
+                    <button class="btn btn-primary me-2" @onclick="SaveScore">Save Score</button>
+                    <button class="btn btn-outline-success" @onclick="GoBack">Play Again</button>
+                </div>
+            }
+            else if (hasWon && IsTimed && hasAlreadySaved)
+            {
+                <div class="alert alert-success mt-3" role="alert">
+                    <h4 class="alert-heading">Score Saved!</h4>
+                    <p>Your time of @FormatTime(secondsRemaining) has been recorded!</p>
+                    <hr>
+                    <button class="btn btn-outline-success me-2" @onclick="GoToHighScores">View High Scores</button>
+                    <button class="btn btn-outline-success" @onclick="GoBack">Play Again</button>
+                </div>
+            }
 
-    <div class="image-info">
-        <h3>Image Information</h3>
-        <p><strong>Path:</strong> @ImageSource</p>
-        @if (ImageWidth > 0 && ImageHeight > 0)
-        {
-            <p><strong>Resolution:</strong> @ImageWidth x @ImageHeight pixels</p>
-        }
-        
-        @if (hasWon)
-        {
-            <div class="alert alert-success mt-3" role="alert">
-                <h4 class="alert-heading">Congratulations!</h4>
-                <p>You've successfully solved the puzzle!</p>
-                <hr>
-                <button class="btn btn-outline-success" @onclick="GoBack">Play Again</button>
-            </div>
-        }
-
-        <div class="puzzle">
-            <div style="display: grid; grid-template-columns: repeat(@gridWidth, 100px); gap: 5px; margin: 5px;">
-                @if (GameController.slidingPuzzleBlocks.Count > 0)
-                {
-                    //Draw puzzle grid
-                    for (int i = 0; i < GameController.slidingPuzzleBlocks.Count; i++)
+            <div class="puzzle">
+                <div class="puzzle-grid" style="--grid-cols: @gridWidth;">
+                    @if (GameController.slidingPuzzleBlocks.Count > 0)
                     {
-                        @UpdateBlocks(i)
-                        ;
+                        //Draw puzzle grid
+                        for (int i = 0; i < GameController.slidingPuzzleBlocks.Count; i++)
+                        {
+                            @UpdateBlocks(i)
+                            ;
+                        }
                     }
-                }
+                </div>
             </div>
         </div>
+    }
+
+    <div class="button-container">
+        @if (IsTimed)
+        {
+            <button class="btn btn-secondary" @onclick="GoToHighScores">View High Scores</button>
+        }
+        <button class="btn btn-secondary" @onclick="GoBack">Back to Main Menu</button>
+        @* Debug button - remove in production *@
+        <button class="btn btn-warning" @onclick="TestWinCondition">Test Win (Debug)</button>
     </div>
-}
-
-
-
-
-<div class="mb-3">
-    <button class="btn btn-secondary" @onclick="GoBack">Back to Main Menu</button>
 </div>
-
 
 @code
 {
     [Parameter][SupplyParameterFromQuery] public string? ImagePath { get; set; }
     [Parameter][SupplyParameterFromQuery] public bool IsTimed { get; set; }
 
-    [Parameter][SupplyParameterFromQuery(Name = "level")] public int difficultyLevel { get; set; }
+    [Parameter][SupplyParameterFromQuery] public int difficultyLevel { get; set; }
     public DifficultyLevel DifficultyLevel => (DifficultyLevel)difficultyLevel;
 
 
@@ -85,12 +132,10 @@
     private int startingTime = 60;
     
 
-
     //Private
     private string? ImageSource { get; set; }
     private int ImageWidth { get; set; }
     private int ImageHeight { get; set; }
-
 
     private ImageSplitter imageSplitter = new ImageSplitter();
     private int gridWidth = 4;
@@ -98,6 +143,11 @@
 
     private int secondsRemaining { get; set; }
     private Timer? timer { get; set; }
+    private string playerName { get; set; } = string.Empty;
+    private char[] playerInitials { get; set; } = { 'A', 'A', 'A' };
+    private int selectedLetterIndex { get; set; } = 0;
+    private bool showNameInput { get; set; } = false;
+    private bool hasAlreadySaved { get; set; } = false;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -109,6 +159,9 @@
         {
             ImagePath = "/Images/Static/redToji.jpg"; // Default fallback
         }
+
+        // Set grid size based on difficulty
+        DetermineGridSize();
 
         await LoadImageData(ImagePath);
 
@@ -122,21 +175,13 @@
     private RenderFragment<int> UpdateBlocks => value => __builder =>
     {
         var block = GameController.slidingPuzzleBlocks[value];
-        if (block.IsEmptyBlock)
-        {
-            <img src="@block.DataUri" @onclick="(() => OnClickBlock(value))" alt="Image Block" style="width: 100px; height: 100px;" />
-        }
-        else
-        {
-            <img src="@block.DataUri" @onclick="(() => OnClickBlock(value))" alt="Image Block" style="width: 100px; height: 100px; border: 1px solid black;" />
-        }
+        <img class="puzzle-piece" src="@block.DataUri" @onclick="(() => OnClickBlock(value))" alt="Image Block" />
     };
 
     //Updates and swaps blocks if the clicked block is adjacent to the empty block
     private void OnClickBlock(int index)
     {
-        //the code kept rendering past the count, so this restricts movement to valid blocks
-        if (index < GameController.slidingPuzzleBlocks.Count)
+        if (!hasWon && index < GameController.slidingPuzzleBlocks.Count)
         {
             ImageBlock clickedBlock = GameController.slidingPuzzleBlocks[index];
 
@@ -160,6 +205,7 @@
                     if (GameController.slidingPuzzleBlocks[secondIndex].IsEmptyBlock && secondIndex != -1)
                     {
                         GameController.SwapBlocks(firstIndex, secondIndex);
+                        CheckWinCondition();
                         return;
                     }
                 }
@@ -172,6 +218,7 @@
                     if (GameController.slidingPuzzleBlocks[secondIndex].IsEmptyBlock && secondIndex != -1)
                     {
                         GameController.SwapBlocks(firstIndex, secondIndex);
+                        CheckWinCondition();
                         return;
                     }
                 }
@@ -184,6 +231,7 @@
                     if (GameController.slidingPuzzleBlocks[secondIndex].IsEmptyBlock && secondIndex != -1)
                     {
                         GameController.SwapBlocks(firstIndex, secondIndex);
+                        CheckWinCondition();
                         return;
                     }
                 }
@@ -196,6 +244,7 @@
                     if (GameController.slidingPuzzleBlocks[secondIndex].IsEmptyBlock && secondIndex != -1)
                     {
                         GameController.SwapBlocks(firstIndex, secondIndex);
+                        CheckWinCondition();
                         return;
                     }
                 }
@@ -206,10 +255,92 @@
                 }
             }
         }
-
     }
 
-    
+    private void CheckWinCondition()
+    {
+        bool isCompleted = GameController.IsCompleted();
+        Console.WriteLine($"CheckWinCondition called. IsCompleted: {isCompleted}, hasWon: {hasWon}");
+        
+        if (!hasWon && isCompleted)
+        {
+            hasWon = true;
+            Console.WriteLine($"Puzzle completed! IsTimed: {IsTimed}");
+            
+            if (IsTimed)
+            {
+                timer?.Stop();
+                showNameInput = true;
+                // Reset initials for new entry
+                playerInitials = new char[] { 'A', 'A', 'A' };
+                selectedLetterIndex = 0;
+                Console.WriteLine($"Timer stopped. Final time: {secondsRemaining} seconds");
+            }
+            
+            StateHasChanged();
+        }
+    }
+
+    private async Task SaveScore()
+    {
+        if (!hasAlreadySaved)
+        {
+            string finalName = string.Join("", playerInitials);
+            using var context = DbFactory.CreateDbContext();
+            context.AddNewScore(new GameScore(finalName, secondsRemaining, DifficultyLevel));
+            await context.SaveChangesAsync();
+            hasAlreadySaved = true;
+            showNameInput = false;
+            StateHasChanged();
+        }
+    }
+
+    private void CycleLetter(int position, int direction)
+    {
+        char currentLetter = playerInitials[position];
+        int currentIndex = currentLetter - 'A';
+        
+        // Cycle through A-Z (0-25)
+        currentIndex += direction;
+        
+        if (currentIndex < 0)
+            currentIndex = 25; // Wrap to Z
+        else if (currentIndex > 25)
+            currentIndex = 0; // Wrap to A
+        
+        playerInitials[position] = (char)('A' + currentIndex);
+        StateHasChanged();
+    }
+
+    private void SelectLetter(int index)
+    {
+        selectedLetterIndex = index;
+        StateHasChanged();
+    }
+
+    private void HandleKeyDown(KeyboardEventArgs e)
+    {
+        switch (e.Key.ToLower())
+        {
+            case "arrowup":
+                CycleLetter(selectedLetterIndex, 1);
+                break;
+            case "arrowdown":
+                CycleLetter(selectedLetterIndex, -1);
+                break;
+            case "arrowleft":
+                selectedLetterIndex = selectedLetterIndex > 0 ? selectedLetterIndex - 1 : 2;
+                StateHasChanged();
+                break;
+            case "arrowright":
+                selectedLetterIndex = selectedLetterIndex < 2 ? selectedLetterIndex + 1 : 0;
+                StateHasChanged();
+                break;
+            case "enter":
+                _ = SaveScore(); // Fire and forget the async method
+                break;
+        }
+    }
 
     private async Task LoadImageData(string imagePath)
     {
@@ -262,7 +393,6 @@
             try
             {
                 // Split the image into puzzle blocks.
-                // For a 4x4 board: 16 total blocks (perfect square), each block is image/4 wide and image/4 tall.
                 var getBlocks = imageSplitter.SplitImage(physicalPath, gridHeight * gridWidth);
 
                 for (int i = 0; i < getBlocks.Length; i++)
@@ -275,9 +405,6 @@
                 emptyBlockIndex = GameController.slidingPuzzleBlocks.Count - 1;
                 GameController.slidingPuzzleBlocks.RemoveAt(emptyBlockIndex);
 
-                // Shuffle the pieces
-                ImageRandomizer.Shuffle<ImageBlock>(ref GameController.slidingPuzzleBlocks);
-
                 // Load and resize the empty block placeholder to match tile size
                 var emptyBlock = Image.Load(Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "Images", "Static", "empty_block.png"));
                 emptyBlock.Mutate(ctx => ctx.Resize(ImageWidth / gridWidth, ImageHeight / gridHeight));
@@ -286,14 +413,17 @@
                 // Add the empty block at the end
                 GameController.slidingPuzzleBlocks.Add(imgEmptyBlock);
 
-                // Assign board coordinates to every block
-                for (int i = 0; i < GameController.slidingPuzzleBlocks.Count; i++)
-                {
-                    GameController.slidingPuzzleBlocks[i].BoardX = i % gridWidth;
-                    GameController.slidingPuzzleBlocks[i].BoardY = i / gridWidth;
-                }
+                // Shuffle the pieces to make the game playable
+                // Two shuffle methods available:
+                // 1. SimpleShufflePuzzle: Performs valid moves from solved state (guaranteed solvable)
+                // 2. ShufflePuzzle: Uses mathematical inversion counting (more random but complex)
+                ImageRandomizer.SimpleShufflePuzzle(GameController.slidingPuzzleBlocks, gridWidth, 500);
 
                 hasLoaded = true;
+                
+                // Check win condition after loading (in case puzzle is already solved)
+                CheckWinCondition();
+                
                 await InvokeAsync(StateHasChanged);
             }
             catch (Exception spl)
@@ -315,7 +445,6 @@
         }
     }
 
-
     private bool FindImageBlock(int boardX, int boardY)
     {
         ImageBlock? imgBlock = GameController.slidingPuzzleBlocks.Find(img => img.BoardX == boardX && img.BoardY == boardY);
@@ -332,6 +461,11 @@
     private void GoBack()
     {
         NavigationManager.NavigateTo("/");
+    }
+
+    private void GoToHighScores()
+    {
+        NavigationManager.NavigateTo("/highscores");
     }
 
     private void StartTimer()
@@ -370,12 +504,18 @@
             secondsRemaining++;
             InvokeAsync(StateHasChanged);
         }
-        else
-        {
-            //Increase time until player has completed puzzle
-            timer?.Stop();
-            using var context = DbFactory.CreateDbContext();
-            context.AddNewScore(new GameScore("RealPlayer", 100, DifficultyLevel.Easy));
-        }
+    }
+
+    private void TestWinCondition()
+    {
+        Console.WriteLine("Manual win condition test triggered");
+        CheckWinCondition();
+    }
+
+    private string FormatTime(int seconds)
+    {
+        int minutes = seconds / 60;
+        int remainingSeconds = seconds % 60;
+        return $"{minutes:D2}:{remainingSeconds:D2}";
     }
 }

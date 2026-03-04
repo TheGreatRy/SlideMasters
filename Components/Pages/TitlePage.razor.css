@@ -1,89 +1,345 @@
-﻿@font-face {
-    font-family: 'MiniPuzzle';
-    src: url('fonts/MiniPuzzleDemoRegular.ttf') format('truetype');
-}
-@font-face {
-    font-family: 'ModernMinimalist';
-    src: url('fonts/Modern Minimalist.ttf') format('truetype');
+﻿:root {
+    --primary-bg: #f3f4f6;
+    --secondary-bg: #ffffff;
+    --accent-color: #6366f1;
+    --accent-hover: #4f46e5;
+    --text-primary: #1f2937;
+    --text-secondary: #6b7280;
+    --border-color: #e5e7eb;
+    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Roboto, sans-serif;
+    --font-heading: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
 
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html {
+    background-color: var(--primary-bg);
+}
+
+body {
+    background-color: var(--primary-bg);
+    font-family: var(--font-sans);
+    color: var(--text-primary);
+}
 
 h3 {
     width: 100%;
     text-align: center;
-    margin-top: 100px;
-    font-size: 75px;
-    font-family: MiniPuzzle, sans-serif;
+    margin-top: 2rem;
+    margin-bottom: 1.5rem;
+    font-size: clamp(1.75rem, 7vw, 75px);
+    font-family: var(--font-heading);
+    color: var(--text-primary);
+    font-weight: 700;
 }
 
 p {
     width: 100%;
     text-align: center;
-    font-size: 35px;
-    font-family: ModernMinimalist, sans-serif;
+    font-size: clamp(1rem, 4vw, 35px);
+    font-family: var(--font-sans);
+    color: var(--text-secondary);
+    margin-bottom: 1.5rem;
+    line-height: 1.6;
 }
 
 ul {
-    margin-left: auto;
-    margin-right: auto;
+    margin: 1.5rem auto;
     width: fit-content;
     text-align: left;
-    font-size: 35px;
-    font-family: ModernMinimalist, sans-serif;
+    font-size: clamp(0.875rem, 3vw, 35px);
+    font-family: var(--font-sans);
+    color: var(--text-primary);
+    padding-left: 1.5rem;
+}
+
+ul li {
+    margin-bottom: 0.75rem;
 }
 
 button {
-    font-family: ModernMinimalist, sans-serif;
+    font-family: var(--font-sans);
+    border-radius: 0.5rem;
+    font-weight: 500;
+    transition: all 0.2s ease-in-out;
+    border: none;
 }
 
+button:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
+}
+
+/* Input Section */
 .inputs {
     display: flex;
+    flex-direction: column;
     justify-content: center;
-    align-items: center; 
-    gap: 20px; 
-    flex-wrap: nowrap;
+    align-items: center;
+    gap: 2rem;
+    margin: 2rem auto;
+    max-width: 1000px;
+    padding: 2rem;
+    background-color: var(--secondary-bg);
+    border-radius: 1rem;
+    box-shadow: var(--shadow-md);
 }
 
 .inputs .mb-4 {
     margin-bottom: 0;
+    width: 100%;
+    max-width: 500px;
 }
 
-    .inputs,
-    .inputs * {
-        font-family: ModernMinimalist, sans-serif;
-        font-size: 20px;
-    }
+.inputs h5 {
+    font-family: var(--font-heading);
+    font-size: clamp(0.875rem, 2.5vw, 20px);
+    color: var(--text-primary);
+    margin-bottom: 0.75rem;
+    text-align: center;
+    font-weight: 600;
+}
 
+.inputs,
+.inputs * {
+    font-family: var(--font-sans);
+    font-size: clamp(0.75rem, 2vw, 20px);
+    color: var(--text-primary);
+}
+
+.inputs .form-control {
+    border-color: var(--border-color);
+    color: var(--text-primary);
+    border-radius: 0.5rem;
+    padding: 0.75rem;
+    font-family: var(--font-sans);
+    background-color: var(--primary-bg);
+}
+
+.inputs .form-control:focus {
+    border-color: var(--accent-color);
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+    background-color: var(--secondary-bg);
+}
+
+.inputs .input-group {
+    width: 100%;
+    display: flex;
+    gap: 0.5rem;
+}
+
+.inputs .input-group .form-control {
+    flex: 1;
+}
+
+.inputs .text-danger {
+    color: #dc2626;
+    text-align: center;
+    font-family: var(--font-sans);
+}
+
+.inputs .text-success {
+    color: #059669;
+    text-align: center;
+    font-family: var(--font-sans);
+}
+
+.inputs img {
+    border-radius: 0.5rem;
+    box-shadow: var(--shadow-md);
+    max-width: 100%;
+    height: auto;
+    margin-top: 1rem;
+}
+
+/* Game Buttons Section */
 .btn-game {
-    height: 50px;
-    font-size: 35px;
+    height: auto;
+    min-height: 3rem;
+    font-size: clamp(1rem, 3vw, 35px);
+    padding: 1rem 2rem;
+    background-color: var(--accent-color);
+    color: white;
+    font-family: var(--font-sans);
+    cursor: pointer;
 }
 
-.btn-diff {
-    height: 50px;
-    font-size: 35px;
+.btn-game:hover {
+    background-color: var(--accent-hover);
 }
 
 .game-btns {
     display: flex;
     justify-content: center;
     align-items: center;
-    gap: 100px;
-    flex-wrap: nowrap;
-    margin-top: 50px;
+    gap: clamp(2rem, 5vw, 100px);
+    flex-wrap: wrap;
+    margin-top: 2rem;
+    margin-left: auto;
+    margin-right: auto;
+    padding: 2rem;
+    max-width: 1000px;
+    background-color: var(--secondary-bg);
+    border-radius: 1rem;
+    box-shadow: var(--shadow-md);
+}
+
+/* Difficulty Buttons Section */
+.btn-diff {
+    height: auto;
+    min-height: 3rem;
+    font-size: clamp(1rem, 3vw, 35px);
+    padding: 1rem 2rem;
+    background-color: var(--border-color);
+    color: var(--text-primary);
+    font-family: var(--font-sans);
+    cursor: pointer;
+}
+
+.btn-diff:hover {
+    background-color: #d1d5db;
+}
+
+.btn-diff.btn-selected {
+    background-color: #d1d5db;
+    color: var(--text-primary);
+    box-shadow: var(--shadow-md);
 }
 
 .diff-btns {
     display: flex;
     justify-content: center;
     align-items: center;
-    gap: 100px;
-    flex-wrap: nowrap;
-    margin-top: 50px;
+    gap: clamp(2rem, 5vw, 100px);
+    flex-wrap: wrap;
+    margin-top: 2rem;
+    margin-left: auto;
+    margin-right: auto;
+    padding: 2rem;
+    max-width: 1000px;
+    background-color: var(--secondary-bg);
+    border-radius: 1rem;
+    box-shadow: var(--shadow-md);
 }
 
 .form-control {
-    font-family: ModernMinimalist, sans-serif;
-    height: 25px;
-    width: 100px;
+    font-family: var(--font-sans);
+    height: auto;
+    min-height: 2.5rem;
+    width: clamp(80px, 100%, 100px);
+    border-radius: 0.5rem;
+    border: 1px solid var(--border-color);
+    padding: 0.5rem;
+}
+
+/* Spinner */
+.spinner-border-sm {
+    width: 1rem;
+    height: 1rem;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    h3 {
+        margin-top: 1.5rem;
+        margin-bottom: 1rem;
+    }
+
+    p {
+        margin-bottom: 1rem;
+    }
+
+    ul {
+        font-size: clamp(0.875rem, 2.5vw, 25px);
+        margin: 1rem auto;
+    }
+
+    .inputs {
+        gap: 1.5rem;
+        margin: 1.5rem auto;
+        padding: 1.5rem 1rem;
+    }
+
+    .game-btns,
+    .diff-btns {
+        gap: clamp(1rem, 3vw, 50px);
+        margin-top: 1.5rem;
+        padding: 1.5rem 1rem;
+    }
+
+    .btn-game,
+    .btn-diff {
+        min-height: 2.5rem;
+        font-size: clamp(0.875rem, 2.5vw, 25px);
+        padding: 0.75rem 1.5rem;
+    }
+}
+
+@media (max-width: 480px) {
+    h3 {
+        margin-top: 1rem;
+        margin-bottom: 0.75rem;
+    }
+
+    p {
+        margin-bottom: 0.75rem;
+        font-size: clamp(0.875rem, 3vw, 25px);
+    }
+
+    ul {
+        font-size: clamp(0.75rem, 2.5vw, 20px);
+        margin: 0.75rem auto;
+        padding-left: 1rem;
+    }
+
+    ul li {
+        margin-bottom: 0.5rem;
+    }
+
+    .inputs {
+        gap: 1rem;
+        margin: 1rem auto;
+        padding: 1rem 0.75rem;
+    }
+
+    .inputs h5 {
+        font-size: clamp(0.75rem, 2vw, 18px);
+        margin-bottom: 0.5rem;
+    }
+
+    .inputs .input-group {
+        flex-direction: column;
+    }
+
+    .inputs .input-group .form-control {
+        width: 100%;
+    }
+
+    .game-btns,
+    .diff-btns {
+        gap: 1rem;
+        margin-top: 1rem;
+        padding: 1rem 0.75rem;
+    }
+
+    .btn-game,
+    .btn-diff {
+        min-height: 2.25rem;
+        font-size: clamp(0.75rem, 2vw, 18px);
+        padding: 0.5rem 1rem;
+        width: 100%;
+        max-width: 250px;
+    }
+
+    .form-control {
+        width: 100%;
+    }
 }

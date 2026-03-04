@@ -11,20 +11,11 @@ namespace SlideMasters_BlazorApp.Models
         {
         }
 
-        public GameScore GetEasyHighScore()
+        public List<GameScore> GetHighScoresByDifficulty(DifficultyLevel difficultyLevel)
         {
-            return GameScore.FirstOrDefault(s => s.Difficulty == DifficultyLevel.Easy)!;
-        }
-
-        public GameScore GetMediumHighScore()
-        {
-            return GameScore.FirstOrDefault(s => s.Difficulty == DifficultyLevel.Medium)!;
-        }
-
-        public GameScore GetHardHighScore()
-        {
-            return GameScore.FirstOrDefault(s => s.Difficulty == DifficultyLevel.Hard)!;
-
+            return GameScore.Where(s => s.Difficulty == difficultyLevel)
+                           .OrderBy(s => s.Score) // Lower time is better
+                           .ToList();
         }
 
         public void AddNewScore(GameScore newScore)
@@ -35,13 +26,16 @@ namespace SlideMasters_BlazorApp.Models
                 user = new User(newScore.Username);
                 Users.Add(user);
             }
+            
+            GameScore.Add(newScore);
             user.ReplaceHighScore(newScore);
             SaveChanges();
         }
         
         public List<GameScore> GetAllScores()
         {
-            return GameScore.ToList();
+            return GameScore.OrderBy(s => s.Score) // Lower time is better
+                           .ToList();
         }
     }
 }

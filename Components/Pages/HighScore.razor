@@ -1,0 +1,123 @@
+﻿@rendermode InteractiveServer
+@page "/highscores"
+
+@using SlideMasters_BlazorApp.Models
+@inject DBContextService contextService
+@inject NavigationManager NavigationManager
+
+<h3>High Scores</h3>
+
+<p>Here are the high scores for the game:</p>
+
+<div class="difficulty-btns">
+    <button class="btn btn-diff @(SelectedDifficultyLevel == DifficultyLevel.Easy ? "btn-selected" : "")" @onclick="() => OnDifficultyLevelChanged(DifficultyLevel.Easy)">Easy</button>
+    <button class="btn btn-diff @(SelectedDifficultyLevel == DifficultyLevel.Medium ? "btn-selected" : "")" @onclick="() => OnDifficultyLevelChanged(DifficultyLevel.Medium)">Medium</button>
+    <button class="btn btn-diff @(SelectedDifficultyLevel == DifficultyLevel.Hard ? "btn-selected" : "")" @onclick="() => OnDifficultyLevelChanged(DifficultyLevel.Hard)">Hard</button>
+    <button class="btn btn-diff @(ShowAllDifficulties ? "btn-selected" : "")" @onclick="() => OnShowAllDifficulties()">All</button>
+</div>
+
+<div class="scores-container">
+    <ul class="scores-list">
+        @foreach(var score in CurrentPageScores)
+        {
+            <li>
+                <span class="score-rank">#@(AllScores.IndexOf(score) + 1)</span>
+                <span class="score-name">@score.Username</span>
+                <span class="score-value">@FormatTime(score.Score)</span>
+            </li>
+        }
+    </ul>
+</div>
+
+<div class="pagination">
+    @{
+        var startPage = Math.Max(1, CurrentPage - 1);
+        var endPage = Math.Min(TotalPages, startPage + 3);
+        
+        // Adjust if we're at the end
+        if (endPage - startPage < 3)
+        {
+            startPage = Math.Max(1, endPage - 3);
+        }
+    }
+    
+    @for (int i = startPage; i <= endPage; i++)
+    {
+        int pageNum = i;
+        <button class="btn pagination-btn @(CurrentPage == pageNum ? "btn-selected" : "")" @onclick="() => GoToPage(pageNum)">@pageNum</button>
+    }
+</div>
+
+<div class="button-container">
+    <button class="btn btn-secondary back-btn" @onclick="GoBack">← Back to Main Menu</button>
+</div>
+
+@code {
+    const int ItemsPerPage = 10;
+    const int MaxPages = 10;
+    
+    List<GameScore> AllScores { get; set; } = new List<GameScore>();
+    DifficultyLevel SelectedDifficultyLevel { get; set; } = DifficultyLevel.Easy;
+    bool ShowAllDifficulties { get; set; } = false;
+    int CurrentPage { get; set; } = 1;
+    int TotalPages { get; set; } = 1;
+
+    List<GameScore> CurrentPageScores
+    {
+        get
+        {
+            int skipCount = (CurrentPage - 1) * ItemsPerPage;
+            return AllScores.Skip(skipCount).Take(ItemsPerPage).ToList();
+        }
+    }
+
+    protected override void OnInitialized()
+    {
+        LoadScores();
+    }
+
+    void LoadScores()
+    {
+        AllScores = ShowAllDifficulties 
+            ? contextService.GetAllScores().Take(100).ToList()
+            : contextService.GetHighScoresByDifficulty(SelectedDifficultyLevel).Take(100).ToList();
+        
+        int calculatedPages = (AllScores.Count + ItemsPerPage - 1) / ItemsPerPage;
+        TotalPages = calculatedPages > MaxPages ? MaxPages : calculatedPages;
+        
+        CurrentPage = 1;
+    }
+
+    public void OnDifficultyLevelChanged(DifficultyLevel difficultyLevel)
+    {
+        SelectedDifficultyLevel = difficultyLevel;
+        ShowAllDifficulties = false;
+        LoadScores();
+    }
+
+    public void OnShowAllDifficulties()
+    {
+        ShowAllDifficulties = true;
+        LoadScores();
+    }
+
+    void GoToPage(int pageNumber)
+    {
+        if (pageNumber >= 1 && pageNumber <= TotalPages)
+        {
+            CurrentPage = pageNumber;
+        }
+    }
+
+    private string FormatTime(int seconds)
+    {
+        int minutes = seconds / 60;
+        int remainingSeconds = seconds % 60;
+        return $"{minutes:D2}:{remainingSeconds:D2}";
+    }
+
+    private void GoBack()
+    {
+        NavigationManager.NavigateTo("/");
+    }
+}
