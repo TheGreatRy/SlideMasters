@@ -5,8 +5,10 @@
 @using SixLabors.ImageSharp.Processing
 @using SlideMasters_BlazorApp.Models
 @using System.Timers
+@using SixLabors.ImageSharp.PixelFormats
 @inject IWebHostEnvironment Environment
 @inject NavigationManager NavigationManager
+@inject HttpClient HttpClient
 @inject IDbContextFactory<DBContextService> DbFactory
 
 <PageTitle>Home</PageTitle>
@@ -30,9 +32,15 @@
         {
             <p><strong>Resolution:</strong> @ImageWidth x @ImageHeight pixels</p>
         }
+        
         @if (hasWon)
         {
-            <p><strong>CONGRATS, YOU HAVE COMPLETED THE PUZZLE!!! :D</strong></p>
+            <div class="alert alert-success mt-3" role="alert">
+                <h4 class="alert-heading">Congratulations!</h4>
+                <p>You've successfully solved the puzzle!</p>
+                <hr>
+                <button class="btn btn-outline-success" @onclick="GoBack">Play Again</button>
+            </div>
         }
 
         <div class="puzzle">
@@ -50,6 +58,13 @@
         </div>
     </div>
 }
+
+
+
+
+<div class="mb-3">
+    <button class="btn btn-secondary" @onclick="GoBack">Back to Main Menu</button>
+</div>
 
 
 @code
@@ -84,14 +99,18 @@
     private int secondsRemaining { get; set; }
     private Timer? timer { get; set; }
 
-    protected override void OnInitialized()
+    protected override async Task OnAfterRenderAsync(bool firstRender)
     {
+        // OnAfterRender only runs on the client after the interactive SignalR circuit
+        // is established — never during static pre-render, so WebRootPath is always valid here.
+        if (!firstRender) return;
+
         if (string.IsNullOrEmpty(ImagePath))
         {
             ImagePath = "/Images/Static/redToji.jpg"; // Default fallback
         }
 
-        LoadImageData(ImagePath);
+        await LoadImageData(ImagePath);
 
         if (IsTimed)
         {
@@ -112,7 +131,7 @@
             <img src="@block.DataUri" @onclick="(() => OnClickBlock(value))" alt="Image Block" style="width: 100px; height: 100px; border: 1px solid black;" />
         }
     };
-    
+
     //Updates and swaps blocks if the clicked block is adjacent to the empty block
     private void OnClickBlock(int index)
     {
@@ -190,85 +209,109 @@
 
     }
 
-    private void LoadImageData(string imagePath)
+    
+
+    private async Task LoadImageData(string imagePath)
     {
         ImageSource = imagePath;
-        string physicalPath;
+        string? tempFilePath = null;
 
         try
         {
-            if (imagePath.StartsWith("http"))
+            string physicalPath;
+
+            if (imagePath.StartsWith("http", StringComparison.OrdinalIgnoreCase))
             {
-                Console.WriteLine("URL detected. Need to add full functionallity");
-                return;
-            }
+                // Download the URL image to a temp file so ImageSplitter (which needs a path) can use it
+                var imageBytes = await HttpClient.GetByteArrayAsync(imagePath);
 
-            {
-                physicalPath = Path.Combine(Environment.WebRootPath, imagePath.TrimStart('/'));
-            }
-
-            if (File.Exists(physicalPath))
-            {
-                var imageInfo = Image.Identify(physicalPath);
-                if (imageInfo != null)
-                {
-
-                    ImageHeight = imageInfo.Height;
-                    ImageWidth = imageInfo.Width;
-                }
-
-                //We only want to split the image if it exists
+                // Detect extension from URL, fall back to .jpg
+                string ext = ".jpg";
                 try
                 {
-                    //Split the image to store
-
-                    //for square boards, the amount of blocks needs to be a perfect square
-                    //so, for a 4x4 board, we use 4 as the mod for rows and columns and 4^2 is our total amount of squares
-                    //we also need to use the image resolution to properly set the image in the correct coordinate
-
-                    var getBlocks = imageSplitter.SplitImage(physicalPath, (gridHeight * gridWidth));
-
-                    for (int i = 0; i < getBlocks.Count(); i++)
-                    {
-                        var block = new ImageBlock(getBlocks[i]) { BoardID = i };
-                        GameController.slidingPuzzleBlocks.Add(block);
-                    }
-
-                    //Remove the last block to allow an empty image to be added
-                    emptyBlockIndex = GameController.slidingPuzzleBlocks.Count - 1;
-                    GameController.slidingPuzzleBlocks.RemoveAt(emptyBlockIndex);
-
-                    //Shuffle the existing pieces
-                    //ImageRandomizer.Shuffle<ImageBlock>(ref GameController.slidingPuzzleBlocks);
-
-                    //Get the empty block and create an Image block from it
-                    //It is resized to match the existing puzzle block dimensions
-                    var emptyBlock = Image.Load(Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "Images", "Static", "empty_block.png"));
-                    emptyBlock.Mutate(context => context.Resize(ImageWidth / gridWidth, ImageHeight / gridHeight));
-                    var imgEmptyBlock = new ImageBlock(emptyBlock) { IsEmptyBlock = true, BoardID = emptyBlockIndex };
-
-                    //Add the empty block to the end
-                    GameController.slidingPuzzleBlocks.Add(imgEmptyBlock);
-
-                    //update all the blocks to have the proper coords
-                    for (int i = 0; i < GameController.slidingPuzzleBlocks.Count; i++)
-                    {
-                        GameController.slidingPuzzleBlocks[i].BoardX = i % gridWidth;
-                        GameController.slidingPuzzleBlocks[i].BoardY = (int)(i / gridWidth);
-                    }
-
-                    //Puzzle construction is successful, dont allow players to load the image again
-                    hasLoaded = true;
+                    var uriPath = new Uri(imagePath).AbsolutePath;
+                    var uriExt = Path.GetExtension(uriPath);
+                    if (!string.IsNullOrEmpty(uriExt) && uriExt.Length <= 5) ext = uriExt;
                 }
-                catch (Exception spl)
+                catch { /* ignore, use default */ }
+
+                tempFilePath = Path.Combine(Path.GetTempPath(), $"{Guid.NewGuid()}{ext}");
+                await File.WriteAllBytesAsync(tempFilePath, imageBytes);
+                physicalPath = tempFilePath;
+            }
+            else
+            {
+                // Normalize forward slashes to the OS path separator before combining
+                var relativePath = imagePath.TrimStart('/').Replace('/', Path.DirectorySeparatorChar);
+                var webRoot = Environment.WebRootPath;
+                if (string.IsNullOrEmpty(webRoot))
                 {
-                    Console.WriteLine($"Error while splitting image: {spl.Message}");
+                    // WebRootPath can be null/empty during SSR pre-render — abort early
+                    Console.WriteLine("WebRootPath is empty, skipping load (pre-render phase)");
+                    return;
                 }
+                physicalPath = Path.Combine(webRoot, relativePath);
+                Console.WriteLine($"Resolved physical path: {physicalPath}");
+            }
+
+            using var image = Image.Load<Rgba32>(physicalPath);
+
+            ImageHeight = image.Height;
+            ImageWidth = image.Width;
+
+            try
+            {
+                // Split the image into puzzle blocks.
+                // For a 4x4 board: 16 total blocks (perfect square), each block is image/4 wide and image/4 tall.
+                var getBlocks = imageSplitter.SplitImage(physicalPath, gridHeight * gridWidth);
+
+                for (int i = 0; i < getBlocks.Length; i++)
+                {
+                    var block = new ImageBlock(getBlocks[i]) { BoardID = i };
+                    GameController.slidingPuzzleBlocks.Add(block);
+                }
+
+                // Remove the last block to make room for the empty sliding tile
+                emptyBlockIndex = GameController.slidingPuzzleBlocks.Count - 1;
+                GameController.slidingPuzzleBlocks.RemoveAt(emptyBlockIndex);
+
+                // Shuffle the pieces
+                ImageRandomizer.Shuffle<ImageBlock>(ref GameController.slidingPuzzleBlocks);
+
+                // Load and resize the empty block placeholder to match tile size
+                var emptyBlock = Image.Load(Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "Images", "Static", "empty_block.png"));
+                emptyBlock.Mutate(ctx => ctx.Resize(ImageWidth / gridWidth, ImageHeight / gridHeight));
+                var imgEmptyBlock = new ImageBlock(emptyBlock) { IsEmptyBlock = true, BoardID = emptyBlockIndex };
+
+                // Add the empty block at the end
+                GameController.slidingPuzzleBlocks.Add(imgEmptyBlock);
+
+                // Assign board coordinates to every block
+                for (int i = 0; i < GameController.slidingPuzzleBlocks.Count; i++)
+                {
+                    GameController.slidingPuzzleBlocks[i].BoardX = i % gridWidth;
+                    GameController.slidingPuzzleBlocks[i].BoardY = i / gridWidth;
+                }
+
+                hasLoaded = true;
+                await InvokeAsync(StateHasChanged);
+            }
+            catch (Exception spl)
+            {
+                Console.WriteLine($"Error while splitting image: {spl.Message}");
             }
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error reading image resolution: {ex.Message}");
+            Console.WriteLine($"Error loading image: {ex.Message}");
+        }
+        finally
+        {
+            // Clean up the temp file if one was created for a URL image
+            if (tempFilePath != null && File.Exists(tempFilePath))
+            {
+                try { File.Delete(tempFilePath); } catch { /* best effort */ }
+            }
         }
     }
 
@@ -284,6 +327,11 @@
     {
         ImageBlock? imgBlock = GameController.slidingPuzzleBlocks.Find(img => img.BoardX == boardX && img.BoardY == boardY);
         return (imgBlock == null) ? -1 : GameController.slidingPuzzleBlocks.IndexOf(imgBlock);
+    }
+    
+    private void GoBack()
+    {
+        NavigationManager.NavigateTo("/");
     }
 
     private void StartTimer()
