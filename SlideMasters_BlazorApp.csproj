@@ -17,6 +17,8 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Include="wwwroot\fonts\Future Thor Trial.ttf" />
+    <None Include="wwwroot\fonts\MiniPuzzleDemoRegular.ttf" />
     <None Include="wwwroot\Images\Static\redToji.jpg" />
     <None Include="wwwroot\Images\Static\toji.jpg" />
   </ItemGroup>
