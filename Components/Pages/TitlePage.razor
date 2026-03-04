@@ -24,17 +24,18 @@
         <InputFile OnChange="HandleFileSelected" class="form-control"></InputFile>
     </div>
 
-<div class="mb-4">
-    <h5>Option 2: Use Image URL</h5>
-    <div class="input-group">
-        <input type="text" @bind="imageUrl" @bind:event="oninput" class="form-control @(urlError != null ? "is-invalid" : "")" placeholder="https://example.com/image.jpg" />
-        <button class="btn btn-secondary" @onclick="LoadFromUrl" disabled="@isLoadingUrl">
-            @if (isLoadingUrl)
-            {
-                <span class="spinner-border spinner-border-sm me-1" role="status"></span>
-            }
-            Load URL
-        </button>
+    <div class="mb-4">
+        <h5>Option 2: Use Image URL</h5>
+        <div class="input-group">
+            <input type="text" @bind="imageUrl" @bind:event="oninput" class="form-control @(urlError != null ? "is-invalid" : "")" placeholder="https://example.com/image.jpg" />
+            <button class="btn btn-secondary" @onclick="LoadFromUrl" disabled="@isLoadingUrl">
+                @if (isLoadingUrl)
+                {
+                    <span class="spinner-border spinner-border-sm me-1" role="status"></span>
+                }
+                Load URL
+            </button>
+        </div>
     </div>
     @if (urlError != null)
     {
