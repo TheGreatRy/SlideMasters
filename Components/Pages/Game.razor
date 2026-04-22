@@ -118,7 +118,6 @@
 {
     [Parameter][SupplyParameterFromQuery] public string? ImagePath { get; set; }
     [Parameter][SupplyParameterFromQuery] public bool IsTimed { get; set; }
-
     [Parameter][SupplyParameterFromQuery] public int difficultyLevel { get; set; }
     public DifficultyLevel DifficultyLevel => (DifficultyLevel)difficultyLevel;
 
@@ -130,7 +129,7 @@
     public bool hasWon = false;
 
     private int startingTime = 60;
-    
+
 
     //Private
     private string? ImageSource { get; set; }
@@ -148,6 +147,8 @@
     private int selectedLetterIndex { get; set; } = 0;
     private bool showNameInput { get; set; } = false;
     private bool hasAlreadySaved { get; set; } = false;
+
+    List<KeyValuePair<int, bool>> imageBlockInfo = new List<KeyValuePair<int, bool>>();
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -188,71 +189,41 @@
             //Clicking the empty block should do nothing, so we check the other blocks
             if (!clickedBlock.IsEmptyBlock)
             {
+                //clicked block
+                AddImageBlockInformation(clickedBlock.BoardX, clickedBlock.BoardY);
+
                 //get orthogonal positions
-                bool upCoords = FindImageBlock(clickedBlock.BoardX, clickedBlock.BoardY - 1);
-                bool downCoords = FindImageBlock(clickedBlock.BoardX, clickedBlock.BoardY + 1);
-                bool leftCoords = FindImageBlock(clickedBlock.BoardX - 1, clickedBlock.BoardY);
-                bool rightCoords = FindImageBlock(clickedBlock.BoardX + 1, clickedBlock.BoardY);
+                AddImageBlockInformation(clickedBlock.BoardX, clickedBlock.BoardY - 1);
+                AddImageBlockInformation(clickedBlock.BoardX, clickedBlock.BoardY + 1);
+                AddImageBlockInformation(clickedBlock.BoardX - 1, clickedBlock.BoardY);
+                AddImageBlockInformation(clickedBlock.BoardX + 1, clickedBlock.BoardY);
 
-                int firstIndex = GetImageBlockIndex(clickedBlock.BoardX, clickedBlock.BoardY);
+                int skipFirst = 0;
 
-                if (upCoords)
+                foreach (var imgInfo in imageBlockInfo)
                 {
-                    //block above clicked block
-                    int secondIndex = GetImageBlockIndex(clickedBlock.BoardX, clickedBlock.BoardY - 1);
+                    //skip clicked block (we dont need to check if it's valid against itself)
+                    if (skipFirst == 0) skipFirst++;
 
-                    //if it's empty && not out of bounds, swap
-                    if (GameController.slidingPuzzleBlocks[secondIndex].IsEmptyBlock && secondIndex != -1)
+                    //clicked block exists && is the empty block
+                    else if (imgInfo.Value && imgInfo.Key != -1)
                     {
-                        GameController.SwapBlocks(firstIndex, secondIndex);
-                        CheckWinCondition();
-                        return;
+                        //check empty block here to avoid IndexOutOfBounds if key == -1
+                        if (GameController.slidingPuzzleBlocks[imgInfo.Key].IsEmptyBlock)
+                        {
+                            GameController.SwapBlocks(imageBlockInfo[0].Key, imgInfo.Key);
+                            CheckWinCondition();
+
+                            // Reset stored image dictionary
+                            imageBlockInfo.Clear();
+                            return;
+                        }
                     }
                 }
-                if (downCoords)
-                {
-                    //block under clicked block
-                    int secondIndex = GetImageBlockIndex(clickedBlock.BoardX, clickedBlock.BoardY + 1);
 
-                    //if it's empty && not out of bounds, swap
-                    if (GameController.slidingPuzzleBlocks[secondIndex].IsEmptyBlock && secondIndex != -1)
-                    {
-                        GameController.SwapBlocks(firstIndex, secondIndex);
-                        CheckWinCondition();
-                        return;
-                    }
-                }
-                if (leftCoords)
-                {
-                    //block to the left of clicked block
-                    int secondIndex = GetImageBlockIndex(clickedBlock.BoardX - 1, clickedBlock.BoardY);
+                // Reset stored image dictionary
+                imageBlockInfo.Clear();
 
-                    //if it's empty && not out of bounds, swap
-                    if (GameController.slidingPuzzleBlocks[secondIndex].IsEmptyBlock && secondIndex != -1)
-                    {
-                        GameController.SwapBlocks(firstIndex, secondIndex);
-                        CheckWinCondition();
-                        return;
-                    }
-                }
-                if (rightCoords)
-                {
-                    //block to the right of clicked block
-                    int secondIndex = GetImageBlockIndex(clickedBlock.BoardX + 1, clickedBlock.BoardY);
-
-                    //if it's empty && not out of bounds, swap
-                    if (GameController.slidingPuzzleBlocks[secondIndex].IsEmptyBlock && secondIndex != -1)
-                    {
-                        GameController.SwapBlocks(firstIndex, secondIndex);
-                        CheckWinCondition();
-                        return;
-                    }
-                }
-                //block not found, do not search for empty block
-                else
-                {
-                    return;
-                }
             }
         }
     }
@@ -261,12 +232,12 @@
     {
         bool isCompleted = GameController.IsCompleted();
         Console.WriteLine($"CheckWinCondition called. IsCompleted: {isCompleted}, hasWon: {hasWon}");
-        
+
         if (!hasWon && isCompleted)
         {
             hasWon = true;
             Console.WriteLine($"Puzzle completed! IsTimed: {IsTimed}");
-            
+
             if (IsTimed)
             {
                 timer?.Stop();
@@ -276,7 +247,7 @@
                 selectedLetterIndex = 0;
                 Console.WriteLine($"Timer stopped. Final time: {secondsRemaining} seconds");
             }
-            
+
             StateHasChanged();
         }
     }
@@ -299,15 +270,15 @@
     {
         char currentLetter = playerInitials[position];
         int currentIndex = currentLetter - 'A';
-        
+
         // Cycle through A-Z (0-25)
         currentIndex += direction;
-        
+
         if (currentIndex < 0)
             currentIndex = 25; // Wrap to Z
         else if (currentIndex > 25)
             currentIndex = 0; // Wrap to A
-        
+
         playerInitials[position] = (char)('A' + currentIndex);
         StateHasChanged();
     }
@@ -420,10 +391,10 @@
                 ImageRandomizer.SimpleShufflePuzzle(GameController.slidingPuzzleBlocks, gridWidth, 500);
 
                 hasLoaded = true;
-                
+
                 // Check win condition after loading (in case puzzle is already solved)
                 CheckWinCondition();
-                
+
                 await InvokeAsync(StateHasChanged);
             }
             catch (Exception spl)
@@ -445,19 +416,13 @@
         }
     }
 
-    private bool FindImageBlock(int boardX, int boardY)
-    {
+    private void AddImageBlockInformation(int boardX, int boardY)
+    {   
         ImageBlock? imgBlock = GameController.slidingPuzzleBlocks.Find(img => img.BoardX == boardX && img.BoardY == boardY);
-
-        return (imgBlock == null) ? false : true;
+        if (imgBlock != null) imageBlockInfo.Add(new KeyValuePair<int, bool>(GameController.slidingPuzzleBlocks.IndexOf(imgBlock), true));
+        else imageBlockInfo.Add(new KeyValuePair<int, bool>(-1, false));
     }
 
-    private int GetImageBlockIndex(int boardX, int boardY)
-    {
-        ImageBlock? imgBlock = GameController.slidingPuzzleBlocks.Find(img => img.BoardX == boardX && img.BoardY == boardY);
-        return (imgBlock == null) ? -1 : GameController.slidingPuzzleBlocks.IndexOf(imgBlock);
-    }
-    
     private void GoBack()
     {
         NavigationManager.NavigateTo("/");
